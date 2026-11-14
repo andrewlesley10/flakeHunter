@@ -3,9 +3,11 @@
 Policy (see DECISIONS.md 007):
 1. No LLM call (the rule was confident, or the LLM was off): ``rules``.
 2. Rule and LLM agree: ``combined``; confidence is the higher of the two.
-3. They disagree: trust the LLM if its confidence is >= LLM_TRUST, otherwise the
-   rule; either way confidence is scaled down by DISAGREEMENT_PENALTY.
-4. LLM only (no rule fired): ``llm``.
+3. They disagree: the rule wins, with confidence scaled down by DISAGREEMENT_PENALTY and
+   the model's view noted. (M9: in every disagreement the rule was right.)
+4. LLM only (no rule fired): ``llm``, with confidence capped at MODEL_CONFIDENCE_CAP.
+   (M9: the 3B model's confidence >= 0.8 was right only 46% of the time, so >= 0.8
+   is reserved for verdicts a rule backs.)
 5. LLM failed: the rule hint capped at FALLBACK_CAP, or ``unknown`` at 0.0: ``fallback``.
    With no rule and no LLM verdict at all, the answer is ``unknown`` (``fallback``).
 """
@@ -15,7 +17,7 @@ from typing import Any
 from flakehunter.models import Category, FinalVerdict, RuleHint, TestFailure, Verdict
 from flakehunter.redact import redact
 
-LLM_TRUST = 0.7
+MODEL_CONFIDENCE_CAP = 0.7
 DISAGREEMENT_PENALTY = 0.75
 FALLBACK_CAP = 0.5
 
@@ -175,7 +177,7 @@ def combine(
         )
 
     if hint is None:
-        return _from_llm(failure, llm, "llm", llm.confidence)
+        return _from_llm(failure, llm, "llm", min(llm.confidence, MODEL_CONFIDENCE_CAP))
 
     if hint.category == llm.category:
         return _from_llm(
@@ -183,13 +185,4 @@ def combine(
         )
 
     note = f"rule '{hint.rule}' said {hint.category}; model said {llm.category}"
-    if llm.confidence >= LLM_TRUST:
-        return _from_llm(
-            failure,
-            llm,
-            "combined",
-            llm.confidence * DISAGREEMENT_PENALTY,
-            rule=hint.rule,
-            note=note,
-        )
     return _from_hint(failure, hint, "combined", hint.confidence * DISAGREEMENT_PENALTY, note=note)

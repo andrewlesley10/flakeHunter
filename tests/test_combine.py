@@ -37,9 +37,9 @@ def test_agreement_is_combined_with_max_confidence() -> None:
     assert (v.decided_by, v.category, v.confidence) == ("combined", "environment", 0.7)
 
 
-def test_disagreement_trusts_confident_llm_with_penalty() -> None:
-    v = combine(F, hint("environment", 0.6), verdict("flaky_test", 0.8))
-    assert (v.decided_by, v.category, v.confidence) == ("combined", "flaky_test", 0.6)
+def test_disagreement_keeps_rule_even_against_confident_llm() -> None:
+    v = combine(F, hint("environment", 0.6), verdict("flaky_test", 0.95))
+    assert (v.decided_by, v.category, v.confidence) == ("combined", "environment", 0.45)
     assert v.note is not None
     assert "model said flaky_test" in v.note
 
@@ -51,7 +51,7 @@ def test_disagreement_with_unsure_llm_keeps_rule() -> None:
 
 def test_llm_only() -> None:
     v = combine(F, None, verdict())
-    assert (v.decided_by, v.category, v.confidence) == ("llm", "product_bug", 0.8)
+    assert (v.decided_by, v.category, v.confidence) == ("llm", "product_bug", 0.7)  # capped
 
 
 def test_llm_failed_falls_back_to_capped_hint() -> None:
