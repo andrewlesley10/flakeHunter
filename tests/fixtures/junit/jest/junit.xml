@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="jest tests" tests="5" failures="3" errors="0" time="0.708">
+  <testsuite name="undefined" errors="0" failures="3" skipped="1" timestamp="2026-11-14T14:50:31" time="0.635" tests="5">
+    <testcase classname=" totals an empty cart" name=" totals an empty cart" time="0.001" file="cart.test.js">
+    </testcase>
+    <testcase classname=" totals two items" name=" totals two items" time="0.001" file="cart.test.js">
+      <failure>Error: expect(received).toBe(expected) // Object.is equality
+
+Expected: 5
+Received: 4
+    at Object.toBe (/home/runner/work/shop/shop/cart.test.js:8:47)
+    at Promise.finally.completed (/home/runner/work/shop/shop/node_modules/jest-circus/build/jestAdapterInit.js:1834:28)
+    at new Promise (&lt;anonymous&gt;)
+    at callAsyncCircusFn (/home/runner/work/shop/shop/node_modules/jest-circus/build/jestAdapterInit.js:1774:10)
+    at _callCircusTest (/home/runner/work/shop/shop/node_modules/jest-circus/build/jestAdapterInit.js:1167:40)
+    at processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at _runTestInContext (/home/runner/work/shop/shop/node_modules/jest-circus/build/jestAdapterInit.js:1103:3)
+    at runTestWithContext (/home/runner/work/shop/shop/node_modules/jest-circus/build/jestAdapterInit.js:996:5)
+    at _runTestsForDescribeBlockOnce (/home/runner/work/shop/shop/node_modules/jest-circus/build/jestAdapterInit.js:1008:11)
+    at _runTestsForDescribeBlock (/home/runner/work/shop/shop/node_modules/jest-circus/build/jestAdapterInit.js:824:5)
+    at run (/home/runner/work/shop/shop/node_modules/jest-circus/build/jestAdapterInit.js:789:3)
+    at runAndTransformResultsToJestFormat (/home/runner/work/shop/shop/node_modules/jest-circus/build/jestAdapterInit.js:2300:21)
+    at jestAdapter (/home/runner/work/shop/shop/node_modules/jest-circus/build/runner.js:111:19)
+    at runTestInternal (/home/runner/work/shop/shop/node_modules/jest-runner/build/index.js:247:16)
+    at runTest (/home/runner/work/shop/shop/node_modules/jest-runner/build/index.js:315:7)</failure>
+    </testcase>
+    <testcase classname=" reads the user email" name=" reads the user email" time="0.001" file="cart.test.js">
+      <failure>TypeError: Cannot read properties of undefined (reading &apos;email&apos;)
+    at Object.email (/home/runner/work/shop/shop/cart.test.js:13:15)
+    at Promise.finally.completed (/home/runner/work/shop/shop/node_modules/jest-circus/build/jestAdapterInit.js:1834:28)
+    at new Promise (&lt;anonymous&gt;)
+    at callAsyncCircusFn (/home/runner/work/shop/shop/node_modules/jest-circus/build/jestAdapterInit.js:1774:10)
+    at _callCircusTest (/home/runner/work/shop/shop/node_modules/jest-circus/build/jestAdapterInit.js:1167:40)
+    at processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at _runTestInContext (/home/runner/work/shop/shop/node_modules/jest-circus/build/jestAdapterInit.js:1103:3)
+    at runTestWithContext (/home/runner/work/shop/shop/node_modules/jest-circus/build/jestAdapterInit.js:996:5)
+    at _runTestsForDescribeBlockOnce (/home/runner/work/shop/shop/node_modules/jest-circus/build/jestAdapterInit.js:1008:11)
+    at _runTestsForDescribeBlock (/home/runner/work/shop/shop/node_modules/jest-circus/build/jestAdapterInit.js:824:5)
+    at run (/home/runner/work/shop/shop/node_modules/jest-circus/build/jestAdapterInit.js:789:3)
+    at runAndTransformResultsToJestFormat (/home/runner/work/shop/shop/node_modules/jest-circus/build/jestAdapterInit.js:2300:21)
+    at jestAdapter (/home/runner/work/shop/shop/node_modules/jest-circus/build/runner.js:111:19)
+    at runTestInternal (/home/runner/work/shop/shop/node_modules/jest-runner/build/index.js:247:16)
+    at runTest (/home/runner/work/shop/shop/node_modules/jest-runner/build/index.js:315:7)</failure>
+    </testcase>
+    <testcase classname=" loads prices in time" name=" loads prices in time" time="0.5" file="cart.test.js">
+      <failure>Error: thrown: &quot;Exceeded timeout of 500 ms for a test.
+Add a timeout value to this test to increase the timeout, if this is a long-running test. See https://jestjs.io/docs/api#testname-fn-timeout.&quot;
+    at _getError (/home/runner/work/shop/shop/node_modules/jest-circus/build/jestAdapterInit.js:1985:12)
+    at Array.map (&lt;anonymous&gt;)
+    at makeSingleTestResult (/home/runner/work/shop/shop/node_modules/jest-circus/build/jestAdapterInit.js:1915:38)
+    at makeTestResults (/home/runner/work/shop/shop/node_modules/jest-circus/build/jestAdapterInit.js:1945:26)
+    at makeRunResult (/home/runner/work/shop/shop/node_modules/jest-circus/build/jestAdapterInit.js:1876:18)
+    at run (/home/runner/work/shop/shop/node_modules/jest-circus/build/jestAdapterInit.js:797:35)
+    at runAndTransformResultsToJestFormat (/home/runner/work/shop/shop/node_modules/jest-circus/build/jestAdapterInit.js:2300:21)
+    at jestAdapter (/home/runner/work/shop/shop/node_modules/jest-circus/build/runner.js:111:19)
+    at runTestInternal (/home/runner/work/shop/shop/node_modules/jest-runner/build/index.js:247:16)
+    at runTest (/home/runner/work/shop/shop/node_modules/jest-runner/build/index.js:315:7)
+
+[cause]: Error: thrown: &quot;Exceeded timeout of 500 ms for a test.
+Add a timeout value to this test to increase the timeout, if this is a long-running test. See https://jestjs.io/docs/api#testname-fn-timeout.&quot;
+    at Object.test (/home/runner/work/shop/shop/cart.test.js:16:1)
+    at ModuleExecutor.exec (/home/runner/work/shop/shop/node_modules/jest-runtime/build/index.js:3055:26)
+    at CjsLoader.loadModule (/home/runner/work/shop/shop/node_modules/jest-runtime/build/index.js:440:36)
+    at CjsLoader.requireModule (/home/runner/work/shop/shop/node_modules/jest-runtime/build/index.js:335:12)
+    at Runtime.requireModule (/home/runner/work/shop/shop/node_modules/jest-runtime/build/index.js:4981:27)
+    at jestAdapter (/home/runner/work/shop/shop/node_modules/jest-circus/build/runner.js:96:13)
+    at processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at runTestInternal (/home/runner/work/shop/shop/node_modules/jest-runner/build/index.js:247:16)
+    at runTest (/home/runner/work/shop/shop/node_modules/jest-runner/build/index.js:315:7)</failure>
+    </testcase>
+    <testcase classname=" applies vouchers" name=" applies vouchers" time="0" file="cart.test.js">
+      <skipped/>
+    </testcase>
+  </testsuite>
+</testsuites>
