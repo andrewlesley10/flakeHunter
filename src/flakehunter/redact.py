@@ -148,8 +148,13 @@ def trim_around(
     before: int = 20,
     after: int = 20,
     max_lines: int = 120,
+    stop_needles: Sequence[str] = (),
 ) -> list[str]:
     """Keep only whole lines near any needle (case-insensitive), merging overlapping windows.
+
+    A window never extends past a line that mentions one of ``stop_needles`` (the
+    *other* failing tests) and none of ``needles``: in a shared log, the lines next to
+    one test's failure are often another test's traceback, which is misleading evidence.
 
     Gaps are replaced by a marker line. If no needle matches, the last ``max_lines``
     lines are kept, because CI errors cluster at the end of a log (M9: on LogChunks this
@@ -164,9 +169,18 @@ def trim_around(
         skipped = len(lines) - len(tail)
         return ([SKIP_MARKER.format(n=skipped)] if skipped else []) + tail
 
+    stops = [s.lower() for s in stop_needles if s.strip()]
+
+    def is_boundary(j: int) -> bool:
+        low = lines[j].lower()
+        return any(s in low for s in stops) and not any(n in low for n in wanted)
+
     windows: list[list[int]] = []  # merged [start, end) ranges
     for i in hits:
         start, end = max(0, i - before), min(len(lines), i + after + 1)
+        if stops:
+            start = next((j + 1 for j in range(i - 1, start - 1, -1) if is_boundary(j)), start)
+            end = next((j for j in range(i + 1, end) if is_boundary(j)), end)
         if windows and start <= windows[-1][1]:
             windows[-1][1] = max(windows[-1][1], end)
         else:
@@ -207,6 +221,11 @@ def _truncate_line(line: str) -> str:
     return line[:MAX_LINE_CHARS] + f" [... {len(line) - MAX_LINE_CHARS} chars omitted]"
 
 
+def _mentions(lines: Sequence[str], needles: Sequence[str]) -> bool:
+    wanted = [n.lower() for n in needles if n.strip()]
+    return any(n in line.lower() for line in lines for n in wanted)
+
+
 # --- the single gate --------------------------------------------------------------------
 
 
@@ -229,6 +248,7 @@ def prepare_for_llm(
     before: int = 20,
     after: int = 20,
     max_log_lines: int = 120,
+    other_tests: Sequence[str] = (),
 ) -> PreparedContext:
     """Build the failure's evidence for the LLM: redact, then trim, then truncate lines.
 
@@ -250,8 +270,14 @@ def prepare_for_llm(
     ]
     if failure.stdout:
         sections.append(("stdout", head_tail(clean(failure.stdout), head=0, tail=40)))
+    has_own_output = bool(failure.message.strip() or failure.details.strip())
     for name, lines in (logs or {}).items():
-        trimmed = trim_around(clean("\n".join(lines)), needles, before, after, max_log_lines)
+        if has_own_output and not _mentions(lines, needles):
+            continue  # this log never mentions the failure: its tail would only mislead
+        cleaned = clean("\n".join(lines))
+        trimmed = trim_around(
+            cleaned, needles, before, after, max_log_lines, stop_needles=other_tests
+        )
         sections.append((f"log: {name}", trimmed))
 
     text = "\n".join(

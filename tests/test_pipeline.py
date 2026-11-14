@@ -96,3 +96,23 @@ def test_changed_files_reach_classifier() -> None:
 def test_no_failures() -> None:
     report = run_pipeline([])
     assert (report.total_failures, report.verdicts) == (0, ())
+
+
+def test_shared_log_evidence_is_not_mixed_between_failures() -> None:
+    log = [
+        "____ test_a ____",
+        "E   assert 10.0 == 18.0",
+        "____ test_b ____",
+        "E   httpx.ConnectError: [Errno 111] Connection refused",
+    ]
+    a = TestFailure(
+        id="m::test_a", suite="s", name="test_a", kind="failure", message="assert 10.0 == 18.0"
+    )
+    b = TestFailure(
+        id="m::test_b", suite="s", name="test_b", kind="failure", message="ConnectError"
+    )
+    fake = FakeClassifier()
+    run_pipeline([a, b], logs={"pytest.log": log}, classifier=fake)
+    context_a = next(call[1] for call in fake.calls if call[0] == "m::test_a")
+    assert "assert 10.0 == 18.0" in context_a
+    assert "ConnectError" not in context_a

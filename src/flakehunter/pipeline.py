@@ -86,6 +86,7 @@ def run_pipeline(
             before=LOG_LINES_BEFORE,
             after=LOG_LINES_AFTER,
             max_log_lines=MAX_LOG_LINES,
+            other_tests=[f.name for f in failures if f.id != failure.id],
         )
         secrets += prepared.total_masked
         result = classifier.classify(failure, prepared.text, hint, list(changed_files))

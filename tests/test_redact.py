@@ -377,3 +377,47 @@ def test_log_file_name_is_redacted() -> None:
 def test_secret_counts_not_doubled_by_final_pass() -> None:
     ctx = prepare_for_llm(make_failure(message=f"push failed for {GH}"))
     assert ctx.secrets_masked["github_token"] == 1
+
+
+# --- shared logs: one failure's evidence must not come from another -------------------
+
+SHARED_LOG = [
+    "____ test_cart_total_with_discount ____",
+    "    def test_cart_total_with_discount(client):",
+    ">       assert total == 18.0",
+    "E       assert 10.0 == 18.0",
+    "____ test_checkout_charges_card ____",
+    "    def test_checkout_charges_card(client):",
+    "E       httpx.ConnectError: [Errno 111] Connection refused",
+    "=== short test summary info ===",
+]
+
+
+def test_window_stops_at_another_failing_test() -> None:
+    out = trim_around(
+        SHARED_LOG,
+        ["test_cart_total_with_discount"],
+        before=10,
+        after=10,
+        stop_needles=["test_checkout_charges_card"],
+    )
+    assert "E       assert 10.0 == 18.0" in out
+    assert not any("ConnectError" in line for line in out)
+
+
+def test_window_without_stop_needles_spills_over() -> None:
+    out = trim_around(SHARED_LOG, ["test_cart_total_with_discount"], before=10, after=10)
+    assert any("ConnectError" in line for line in out)  # the bug the stop needles fix
+
+
+def test_unrelated_log_is_left_out_when_failure_has_output() -> None:
+    failure = make_failure(name="Cart confirms the item was added", message="Timed out")
+    ctx = prepare_for_llm(failure, {"pytest.log": SHARED_LOG})
+    assert "ConnectError" not in ctx.text
+    assert "log: pytest.log" not in ctx.text
+
+
+def test_log_only_failure_still_gets_the_tail() -> None:
+    failure = make_failure(name="build-123", message="", details="")
+    ctx = prepare_for_llm(failure, {"build.log": SHARED_LOG})
+    assert "ConnectError" in ctx.text
