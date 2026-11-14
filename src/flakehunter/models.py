@@ -58,3 +58,42 @@ class RuleHint(BaseModel):
     category: Category
     confidence: float = Field(ge=0, le=1)
     evidence: tuple[str, ...] = ()  # the exact lines that matched
+
+
+class Verdict(BaseModel):
+    """What the LLM must return for one failure. Validated before it is trusted.
+
+    Field limits are part of the contract: a reply that breaks them is invalid and
+    gets one repair attempt (see ``llm.py``).
+    """
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    category: Category
+    confidence: float = Field(ge=0, le=1)
+    likely_cause: str = Field(min_length=1, max_length=400)
+    evidence: list[str] = Field(default_factory=list, max_length=5)  # exact log lines
+    suggested_next_step: str = Field(min_length=1, max_length=400)
+    related_changed_files: list[str] = Field(default_factory=list, max_length=10)
+
+
+DecidedBy = Literal["rules", "llm", "combined", "fallback"]
+
+
+class FinalVerdict(BaseModel):
+    """The verdict shown on the PR: rules and LLM merged. Filled in by our code, not the model."""
+
+    model_config = ConfigDict(frozen=True)
+
+    test_id: str
+    test_name: str
+    file: str | None = None
+    category: Category
+    confidence: float = Field(ge=0, le=1)
+    likely_cause: str
+    evidence: tuple[str, ...] = ()
+    suggested_next_step: str
+    related_changed_files: tuple[str, ...] = ()
+    decided_by: DecidedBy
+    rule: str | None = None  # the rule that fired, if any
+    note: str | None = None  # e.g. why the LLM result was not used
