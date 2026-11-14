@@ -98,3 +98,27 @@ Key design decisions and their trade-offs. Each entry gives the context, the dec
 - Conservative patterns miss some cases. That's deliberate: a wrong rule is worse than no rule, because it is confidently wrong *and* skips the LLM.
 
 **Would revisit if:** the M9 evals show a rule's precision below its confidence, or the LLM clearly beats a rule on its own category.
+
+## 006 · One gate before the LLM: trim, then redact, then truncate
+
+**Context:** CI logs are sensitive (tokens, passwords in URLs, auth headers, env dumps) and large (often tens of thousands of lines). In M5, failure text goes to a model, which in CI is a third-party service (GitHub Models). Leaking a user's token into a prompt or a public PR comment would be a serious incident.
+
+**Decision:** `redact.prepare_for_llm()` is the only way to turn raw failure output into prompt text. It works in a fixed order:
+1. **Trim** to whole lines around the failure (merged windows, gaps marked, tail fallback, hard line cap).
+2. **Redact** with an ordered pattern table: PEM keys, then vendor tokens (GitHub, AWS, Slack, Stripe, OpenAI, Google, npm, JWT), then auth headers and URL credentials, then generic `key=value` and `--password` flags. Secrets become typed placeholders such as `[REDACTED:github_token]`, and the counts feed the report footer.
+3. **Truncate** over-long lines.
+
+**Why:**
+- With exactly one path from raw text to prompt, a reviewer audits one function.
+- Trimming first means less text to scan, and working on whole lines never cuts a secret in half.
+- Truncating *after* redaction matters: cutting first could leave a partial token too short for its pattern, which would then leak.
+- Typed placeholders keep diagnostic value ("an auth token was sent") without the value.
+
+**Found by the tests:** a Redis URL with an empty username (`redis://:password@host`) leaked, because the pattern required a username. The adversarial test caught it before it shipped.
+
+**Trade-offs:**
+- Regex redaction is best-effort. It's one layer of several, alongside least-privilege tokens (M7) and minimal context.
+- Generic `key=value` masking over-redacts (`pwd=/home/runner/work` becomes `pwd=[REDACTED]`). Hiding a harmless path costs much less than leaking a password.
+- Tests guard against *under*-redaction too: git SHAs, UUIDs and the word "token" in prose are kept.
+
+**Would revisit if:** false positives start hiding real evidence in the evals, or a new widely used token format appears (add a pattern and a test).
