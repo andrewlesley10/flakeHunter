@@ -2,7 +2,7 @@
 
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 SourceFormat = Literal["pytest", "cypress", "jest", "surefire", "unknown"]
 
@@ -43,3 +43,18 @@ class FileDiff(BaseModel):
 
 
 Outcome = Literal["passed", "failed", "skipped"]
+
+
+Category = Literal["product_bug", "flaky_test", "environment", "test_code", "unknown"]
+"""The five verdicts. Definitions and precedence: docs/categories.md."""
+
+
+class RuleHint(BaseModel):
+    """What a deterministic rule concluded about one failure, and why."""
+
+    model_config = ConfigDict(frozen=True)
+
+    rule: str  # name of the rule that fired, shown in the PR comment
+    category: Category
+    confidence: float = Field(ge=0, le=1)
+    evidence: tuple[str, ...] = ()  # the exact lines that matched
