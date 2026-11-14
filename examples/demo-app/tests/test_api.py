@@ -38,3 +38,13 @@ def test_stock_lookup_is_fast(client: TestClient) -> None:
 def test_checkout_charges_card(client: TestClient) -> None:
     cart = {"lines": [{"sku": "cap", "qty": 1}]}
     assert client.post("/checkout", json=cart).json() == {"status": "paid", "total": 15.0}
+
+
+def test_fixed_amount_code(client: TestClient) -> None:
+    cart = {"lines": [{"sku": "tee", "qty": 1}], "discount_code": "TENOFF"}
+    assert client.post("/cart/total", json=cart).json()["total"] == 10.0
+
+
+def test_discount_for_members(member_client: TestClient) -> None:
+    cart = {"lines": [{"sku": "mug", "qty": 1}], "discount_code": "SAVE25"}
+    assert member_client.post("/cart/total", json=cart).json()["total"] == 9.0
