@@ -25,3 +25,18 @@ class TestFailure(BaseModel):
     stdout: str | None = None
     duration_s: float | None = None
     source_format: SourceFormat = "unknown"
+
+
+FileStatus = Literal["added", "modified", "deleted", "renamed"]
+
+
+class FileDiff(BaseModel):
+    """One file changed by a pull request, parsed from a unified git diff."""
+
+    model_config = ConfigDict(frozen=True)
+
+    path: str  # path after the change (for deletions: the path that was removed)
+    old_path: str | None = None  # set only for renames
+    status: FileStatus
+    binary: bool = False
+    added_lines: tuple[str, ...] = ()  # content of "+" lines, without the "+"
