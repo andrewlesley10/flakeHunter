@@ -1,0 +1,11 @@
+{
+  "name": "flakehunter-demo-app",
+  "private": true,
+  "scripts": {
+    "cy:run": "cypress run"
+  },
+  "devDependencies": {
+    "cypress": "13.17.0",
+    "mocha-junit-reporter": "2.2.1"
+  }
+}
