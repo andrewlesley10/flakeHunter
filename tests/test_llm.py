@@ -154,6 +154,7 @@ def test_connection_error_gives_no_verdict() -> None:
     assert result.verdict is None
     assert result.error is not None
     assert "unavailable" in result.error
+    assert result.unavailable
 
 
 @respx.mock
@@ -243,3 +244,23 @@ def test_schema_is_strict() -> None:
     schema = verdict_schema()
     assert schema["additionalProperties"] is False
     assert set(schema["required"]) == set(schema["properties"])
+
+
+@respx.mock
+def test_non_json_200_gives_no_verdict() -> None:
+    respx.post(URL).mock(
+        return_value=httpx.Response(
+            200, text="upstream says no", headers={"content-type": "text/plain"}
+        )
+    )
+    result = run()
+    assert result.verdict is None
+    assert result.error is not None
+    assert "upstream says no" in result.error
+
+
+@respx.mock
+def test_http_403_names_the_status() -> None:
+    respx.post(URL).mock(return_value=httpx.Response(403, json={"error": "forbidden"}))
+    result = run()
+    assert result.error == "LLM unavailable (HTTP 403)"

@@ -94,10 +94,11 @@ def run_pipeline(
         tokens_out += result.tokens_out
         verdicts.append(combine(failure, hint, result.verdict, llm_error=result.error))
 
-        if result.rate_limited:
-            # Circuit breaker: more calls would only hit the same limit and slow the job.
+        if result.rate_limited or result.unavailable:
+            # Circuit breaker: more calls would only hit the same wall and slow the job.
             llm_available = False
-            notes.append("The model was rate-limited; remaining failures use rule verdicts only.")
+            reason = "rate-limited" if result.rate_limited else "unreachable"
+            notes.append(f"The model was {reason}; remaining failures use rule verdicts only.")
 
     skipped = len(failures) - len(analysed)
     if skipped:

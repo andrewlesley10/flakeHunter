@@ -1,0 +1,20 @@
+# Copy into .github/workflows/tests.yml in your repo.
+name: tests
+on: pull_request
+
+permissions:
+  contents: read        # check out the code
+  pull-requests: write  # post the FlakeHunter comment and label
+  # No API key: the open model runs on the runner itself.
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: pip install -r requirements.txt
+      - run: pytest --junitxml=reports/junit.xml
+      - if: failure()
+        uses: andrewlesley10/flakeHunter@v1
+        with:
+          junit: reports/*.xml

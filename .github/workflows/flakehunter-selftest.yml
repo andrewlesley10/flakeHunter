@@ -1,0 +1,34 @@
+# Dog-food: run FlakeHunter (this repo's own action, "uses: ./") on a few
+# deliberately failing tests whenever the analysis code changes.
+name: FlakeHunter self-test
+
+on:
+  pull_request:
+    paths:
+      - "src/**"
+      - "action.yml"
+      - "examples/selftest/**"
+      - ".github/workflows/flakehunter-selftest.yml"
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  selftest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - name: Run the deliberately failing tests
+        continue-on-error: true
+        run: uvx pytest examples/selftest --junitxml=reports/first.xml -p no:cacheprovider
+      - name: Re-run the failures once (flaky detection)
+        continue-on-error: true
+        run: uvx pytest examples/selftest --junitxml=reports/retry.xml -p no:cacheprovider
+      - name: FlakeHunter
+        if: always()
+        uses: ./
+        with:
+          junit: reports/first.xml
+          retry-report: reports/retry.xml
