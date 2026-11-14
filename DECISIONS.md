@@ -53,6 +53,7 @@ Key design decisions and their trade-offs. Each entry gives the context, the dec
 **Trade-offs:**
 - More annotations to write, including in tests.
 - Untyped libraries need per-module overrides.
+- pydantic needs its mypy plugin (`pydantic.mypy`) before mypy understands frozen models and model constructors.
 - Some time goes on satisfying the checker rather than on features.
 
 **Would revisit if:** the checker's overhead clearly outweighed the bugs it caught. That's unlikely for a project that parses untrusted input.
