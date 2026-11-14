@@ -1,6 +1,6 @@
 [project]
 name = "flakehunter"
-version = "0.1.0"
+version = "1.0.0"
 description = "Classifies failing CI tests and explains each one on the pull request."
 readme = "README.md"
 authors = [

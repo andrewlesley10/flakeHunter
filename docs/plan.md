@@ -14,7 +14,7 @@ flowchart LR
     B --> C[redact & trim]
     C --> D{rules settle it?<br/>confidence ≥ 0.8}
     D -- yes --> F[combine]
-    D -- no --> E[LLM<br/>Ollama / GitHub Models]
+    D -- no --> E[open LLM<br/>Ollama locally, llama.cpp in CI]
     E --> F
     F --> G[report<br/>Markdown / JSON]
     G --> H[sticky PR comment<br/>+ likely-flaky label]

@@ -209,7 +209,7 @@ Key design decisions and their trade-offs. Each entry gives the context, the dec
 - It also exposed a bug: the SDK returned a `str` for a non-JSON 200, and the `AttributeError` escaped the classifier. The classifier now catches *any* exception and names what it got.
 - A second circuit breaker now stops model calls once the server is unreachable, as it already did after a 429.
 
-**Trade-offs:** CPU inference is slow (roughly 10–30 s per failure on a 4-vCPU runner), so a run with many unclear failures takes minutes, which `max-failures` bounds. The first run on a repo downloads 2 GB. A 3B model is weaker than the 70B model GitHub Models offered, which makes the rules-first design and the M9 numbers more important.
+**Trade-offs:** CPU inference is slow (15–40 s per failure measured on a 4-vCPU runner), so a run with many unclear failures takes minutes, which `max-failures` bounds. The first run on a repo downloads 2 GB. A 3B model is weaker than the 70B model GitHub Models offered, which makes the rules-first design and the M9 numbers more important.
 
 **Would revisit if:** a free, keyless hosted inference option returns, or GitHub-hosted runners with GPUs become free for public repos.
 
@@ -237,3 +237,12 @@ Key design decisions and their trade-offs. Each entry gives the context, the dec
 **What it changed:** the first run showed that every rule/model disagreement was won by the rule, and that the 3B model's "≥ 0.8" verdicts were right only 46% of the time. So the rule now wins disagreements, model-only confidence is capped at 0.7, and prompt v3 adds two short decision rules. Combined accuracy went from 48% to 56%, and "≥ 0.8" now means rule-backed. It also exposed a harvester bug that had dropped most retry results.
 
 **Trade-offs and honesty:** the improvement was tuned and measured on the same set, with no held-out split; `results.md` says so. Most labels are mine or by construction, so they're biased toward my own definitions. The scenarios are cleaner than real CI, which is why LogChunks is reported separately (and is much harder).
+
+## 015 · Release: v1.0.0, a moving v1 tag, and docs that are tested
+
+**Decision:**
+- Users pin `andrewlesley10/flakeHunter@v1`. `v1.0.0` is immutable; `v1` moves to the latest compatible `v1.x.y`. Breaking changes mean `v2`.
+- The MIT licence; every dependency is permissively licensed. Llama 3.2 is used under its community licence and is downloaded at run time, not redistributed.
+- `tests/test_release.py` checks that the CLI version matches `pyproject.toml`, that every `action.yml` input appears in the README's inputs table, and that no `${{ }}` expression is interpolated into a `run:` script. It reads `action.yml` with a small regex rather than adding a YAML library.
+
+**Why:** A README that drifts from the code is worse than none, and pinning `@v1` is a promise not to break users within v1.
