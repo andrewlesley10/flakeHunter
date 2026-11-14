@@ -10,6 +10,7 @@ Production concerns live here:
 
 import json
 import os
+import re
 import sys
 from collections.abc import Mapping
 from dataclasses import dataclass
@@ -125,6 +126,17 @@ def read_event(env: Mapping[str, str]) -> PullRequestEvent | None:
     )
 
 
+def comment_marker(env: Mapping[str, str]) -> str:
+    """A hidden marker unique to this workflow and job.
+
+    Two workflows (or two jobs) running FlakeHunter on the same PR each keep their own
+    sticky comment instead of overwriting each other's.
+    """
+    key = f"{env.get('GITHUB_WORKFLOW', '')}/{env.get('GITHUB_JOB', '')}"
+    key = re.sub(r"[^A-Za-z0-9 ._/-]", "", key).replace("--", "-")[:100]
+    return f"<!-- flakehunter:{key} -->"
+
+
 def annotate(level: str, message: str) -> None:
     """A GitHub Actions workflow command: shows up on the run's summary page."""
     message = message.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
@@ -135,4 +147,4 @@ def write_step_summary(markdown: str, env: Mapping[str, str] | None = None) -> N
     path = (env or os.environ).get("GITHUB_STEP_SUMMARY")
     if path:
         with open(path, "a", encoding="utf-8") as f:
-            f.write(markdown.replace(MARKER, "") + "\n")
+            f.write(re.sub(r"<!-- flakehunter[^>]*-->\n?", "", markdown) + "\n")

@@ -81,7 +81,7 @@ runs:
           server=$(find "$dir" -type f -name llama-server | head -n 1)
           [ -n "$server" ] || return 1
           model=~/.cache/flakehunter/models/model.gguf
-          if ! echo "$MODEL_SHA256  $model" | sha256sum -c --quiet 2>/dev/null; then
+          if ! { [ -f "$model" ] && echo "$MODEL_SHA256  $model" | sha256sum -c --quiet; }; then
             curl -fsSL --retry 3 -o "$model" "$MODEL_URL" || return 1
             echo "$MODEL_SHA256  $model" | sha256sum -c --quiet || return 1
           fi

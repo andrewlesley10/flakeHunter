@@ -134,7 +134,8 @@ def cmd_github(args: argparse.Namespace, env: dict[str, str]) -> int:
     if not report.total_failures:
         github.annotate("notice", "no failing tests found; nothing to comment")
         return 0
-    action = client.upsert_comment(event.number, markdown)
+    marker = github.comment_marker(env)
+    action = client.upsert_comment(event.number, f"{marker}\n{markdown}", marker=marker)
     print(f"flakehunter: {action} the PR comment", file=sys.stderr)
     wants_label = str(args.label).lower() in {"true", "1", "yes"}
     if wants_label and any(v.category == "flaky_test" for v in report.verdicts):

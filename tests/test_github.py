@@ -8,7 +8,7 @@ import respx
 
 from flakehunter import cli
 from flakehunter.cli import main
-from flakehunter.github import GitHubClient, read_event, write_step_summary
+from flakehunter.github import GitHubClient, comment_marker, read_event, write_step_summary
 from flakehunter.report import MARKER
 
 API = "https://api.github.com"
@@ -131,10 +131,18 @@ def test_read_event_push_is_none(tmp_path: Path) -> None:
     assert read_event({}) is None
 
 
+def test_comment_marker_is_per_workflow_job() -> None:
+    a = comment_marker({"GITHUB_WORKFLOW": "Demo app", "GITHUB_JOB": "demo"})
+    b = comment_marker({"GITHUB_WORKFLOW": "tests", "GITHUB_JOB": "demo"})
+    assert a == "<!-- flakehunter:Demo app/demo -->"
+    assert a != b
+    assert "-->" not in comment_marker({"GITHUB_WORKFLOW": "x-->y<script>"})[:-4]
+
+
 def test_step_summary_drops_marker(tmp_path: Path) -> None:
     path = tmp_path / "s.md"
     write_step_summary(f"{MARKER}\n# hi", {"GITHUB_STEP_SUMMARY": str(path)})
-    assert path.read_text() == "\n# hi\n"
+    assert path.read_text() == "# hi\n"
 
 
 # --- the entry point ---------------------------------------------------------
@@ -160,7 +168,8 @@ def test_github_posts_comment(
 
     assert run_github(monkeypatch, env) == 0
     body = json.loads(post.calls[0].request.content)["body"]
-    assert body.startswith(MARKER)
+    assert body.startswith("<!-- flakehunter:")
+    assert MARKER in body
     assert not label.called  # nothing flaky in this fixture
     assert "FlakeHunter" in (tmp_path / "summary.md").read_text()
     assert "created the PR comment" in capsys.readouterr().err
