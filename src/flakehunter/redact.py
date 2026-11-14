@@ -151,14 +151,16 @@ def trim_around(
 ) -> list[str]:
     """Keep only whole lines near any needle (case-insensitive), merging overlapping windows.
 
-    Gaps are replaced by a marker line. If no needle matches, the *last* lines are kept,
-    because CI errors cluster at the end of a log. Output never exceeds ``max_lines``
-    content lines; when it would, the windows nearest the end are kept.
+    Gaps are replaced by a marker line. If no needle matches, the last ``max_lines``
+    lines are kept, because CI errors cluster at the end of a log (M9: on LogChunks this
+    keeps 50% of the hand-marked failure lines, against 32% for a 31-line tail). Output
+    never exceeds ``max_lines`` content lines; when it would, the windows nearest the end
+    are kept.
     """
     wanted = [n.lower() for n in needles if n.strip()]
     hits = [i for i, line in enumerate(lines) if any(n in line.lower() for n in wanted)]
     if not hits:
-        tail = list(lines[-min(max_lines, before + after + 1) :])
+        tail = list(lines[-max_lines:]) if max_lines > 0 else []
         skipped = len(lines) - len(tail)
         return ([SKIP_MARKER.format(n=skipped)] if skipped else []) + tail
 

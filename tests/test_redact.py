@@ -228,8 +228,9 @@ def test_overlapping_windows_merged() -> None:
 
 
 def test_no_match_falls_back_to_tail() -> None:
-    out = trim_around(LOG, ["nothing"], before=2, after=2)
+    out = trim_around(LOG, ["nothing"], before=2, after=2, max_lines=5)
     assert out == ["[... 95 lines omitted ...]", *LOG[-5:]]
+    assert trim_around(LOG, ["nothing"], max_lines=0) == ["[... 100 lines omitted ...]"]
 
 
 def test_max_lines_cap_keeps_windows_nearest_the_end() -> None:
