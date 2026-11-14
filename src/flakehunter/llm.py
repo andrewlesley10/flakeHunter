@@ -15,13 +15,18 @@ from typing import Any, Protocol
 
 import openai
 from openai import OpenAI
-from openai.types.chat import ChatCompletionMessageParam
+from openai.types.chat import ChatCompletion, ChatCompletionMessageParam
 from openai.types.shared_params import ResponseFormatJSONObject, ResponseFormatJSONSchema
 from pydantic import ValidationError
 
 from flakehunter.config import LLMSettings
 from flakehunter.models import RuleHint, TestFailure, Verdict
 from flakehunter.prompts import SYSTEM_PROMPT, build_user_message
+from flakehunter.redact import redact
+
+
+class UnexpectedResponseError(Exception):
+    """The endpoint answered, but not with a chat completion."""
 
 
 @dataclass(frozen=True)
@@ -125,6 +130,9 @@ class OpenAICompatClassifier:
             # (the schema is also described in the system prompt) for this and later calls.
             self._format = "json_object"
             return self._complete(messages)
+        if not isinstance(resp, ChatCompletion):
+            # Some gateways answer 200 with a non-JSON body; the SDK then returns a str.
+            raise UnexpectedResponseError(redact(str(resp))[:200])
         usage = resp.usage
         text = (resp.choices[0].message.content or "") if resp.choices else ""
         return (
@@ -169,8 +177,14 @@ class OpenAICompatClassifier:
                 return result(
                     None, "LLM rate-limited; showing rule-based verdict", rate_limited=True
                 )
-            except openai.APIError as e:  # connection, timeout, 4xx/5xx
+            except openai.APIStatusError as e:  # 4xx/5xx: say which, it's actionable
+                return result(None, f"LLM unavailable (HTTP {e.status_code})")
+            except openai.APIError as e:  # connection, timeout
                 return result(None, f"LLM unavailable ({type(e).__name__})")
+            except UnexpectedResponseError as e:
+                return result(None, f"LLM gave an unexpected response: {e}")
+            except Exception as e:  # never raise out of the classifier
+                return result(None, f"LLM call failed ({type(e).__name__})")
             tokens_in += t_in
             tokens_out += t_out
             try:
