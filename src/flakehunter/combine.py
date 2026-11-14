@@ -10,7 +10,10 @@ Policy (see DECISIONS.md 007):
    asked and failed, or ``unknown`` at 0.0: ``fallback``.
 """
 
+from typing import Any
+
 from flakehunter.models import Category, FinalVerdict, RuleHint, TestFailure, Verdict
+from flakehunter.redact import redact
 from flakehunter.rules import is_settled
 
 LLM_TRUST = 0.7
@@ -72,6 +75,23 @@ def _base(failure: TestFailure) -> dict[str, object]:
     return {"test_id": failure.id, "test_name": failure.name, "file": failure.file}
 
 
+_TEXT_FIELDS = ("test_id", "test_name", "likely_cause", "suggested_next_step", "note")
+
+
+def _final(fields: dict[str, Any]) -> FinalVerdict:
+    """Build a FinalVerdict with every text field redacted.
+
+    Verdicts are posted in a PR comment. Rule evidence and the failure message are raw
+    CI output, and the model's text is untrusted, so all of it is redacted here, at
+    the one place every verdict is built.
+    """
+    for key in _TEXT_FIELDS:
+        if isinstance(fields.get(key), str):
+            fields[key] = redact(fields[key])
+    fields["evidence"] = tuple(redact(line) for line in fields.get("evidence", ()))
+    return FinalVerdict.model_validate(fields)
+
+
 def _from_hint(
     failure: TestFailure,
     hint: RuleHint,
@@ -87,7 +107,7 @@ def _from_hint(
         for line in hint.evidence
         if line.startswith("test file changed in this PR: ")
     )
-    return FinalVerdict.model_validate(
+    return _final(
         {
             **_base(failure),
             "category": hint.category,
@@ -111,7 +131,7 @@ def _from_llm(
     rule: str | None = None,
     note: str | None = None,
 ) -> FinalVerdict:
-    return FinalVerdict.model_validate(
+    return _final(
         {
             **_base(failure),
             "category": verdict.category,
@@ -137,7 +157,7 @@ def combine(
     """Apply the policy in the module docstring. Pure: no I/O, never raises on valid input."""
     if llm is None:
         if hint is None:
-            return FinalVerdict.model_validate(
+            return _final(
                 {
                     **_base(failure),
                     "category": "unknown",

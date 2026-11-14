@@ -84,3 +84,34 @@ def test_selector_rule_reports_changed_file() -> None:
 @pytest.mark.parametrize("rule", [r.name for r in RULES])
 def test_every_rule_has_an_explanation(rule: str) -> None:
     assert rule in RULE_EXPLANATIONS
+
+
+GH = "ghp_" + "A1b2C3d4" * 5
+
+
+def test_rule_evidence_is_redacted() -> None:
+    h = RuleHint(
+        rule="connection_refused",
+        category="environment",
+        confidence=0.9,
+        evidence=(f"ECONNREFUSED https://x:{GH}@db:5432",),
+    )
+    v = combine(F, h, None)
+    assert GH not in "".join(v.evidence)
+
+
+def test_unknown_fallback_message_is_redacted() -> None:
+    f = TestFailure(id="t", suite="s", name="t", kind="failure", message=f"token={GH}")
+    assert GH not in "".join(combine(f, None, None).evidence)
+
+
+def test_llm_text_is_redacted() -> None:
+    leaky = Verdict(
+        category="environment",
+        confidence=0.9,
+        likely_cause=f"auth failed with {GH}",
+        evidence=[f"Authorization: Bearer {GH}"],
+        suggested_next_step=f"rotate {GH}",
+    )
+    v = combine(F, None, leaky)
+    assert GH not in v.model_dump_json()
