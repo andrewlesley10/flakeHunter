@@ -347,3 +347,32 @@ def test_head_tail_inside_private_key_does_not_leak() -> None:
     details = "\n".join(["-----BEGIN PRIVATE KEY-----", *body, "-----END PRIVATE KEY-----"])
     ctx = prepare_for_llm(make_failure(details=details))
     assert "QUJDREVGR0hJSktMTU5PUFFSU1RVVldY" not in ctx.text
+
+
+@pytest.mark.parametrize(
+    "url",
+    [
+        "postgres://app:pa#ss@db/x",
+        "postgres://app:pa?ss@db/x",
+        "postgres://app:a@b#c?d@db/x",
+    ],
+)
+def test_url_password_with_hash_or_question_mark(url: str) -> None:
+    assert redact(url) == "postgres://app:[REDACTED]@db/x"
+
+
+def test_url_without_path_over_masks_rather_than_leaks() -> None:
+    out = redact("redis://:pa?ss@cache?timeout=5")
+    assert "pa?ss" not in out
+
+
+def test_log_file_name_is_redacted() -> None:
+    ctx = prepare_for_llm(make_failure(), {f"logs/run-{GH}.log": ["FAILED test_login"]})
+    assert GH not in ctx.text
+    assert "### log: logs/run-[REDACTED:github_token].log" in ctx.text
+    assert ctx.secrets_masked["github_token"] == 1
+
+
+def test_secret_counts_not_doubled_by_final_pass() -> None:
+    ctx = prepare_for_llm(make_failure(message=f"push failed for {GH}"))
+    assert ctx.secrets_masked["github_token"] == 1

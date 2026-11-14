@@ -84,8 +84,10 @@ PATTERNS: tuple[tuple[str, re.Pattern[str], str], ...] = (
     (
         "url_credentials",
         # User may be empty (redis://:pw@host). The password is greedy up to the LAST "@"
-        # before the path, because unencoded "@" in passwords is common (p@ss@host).
-        re.compile(rf"(?i)(\b[a-z][a-z0-9+.-]*://[^\s:/@]*:){_NOT_PLACEHOLDER}[^\s/?#]*@"),
+        # before the path: unencoded "@", "?" and "#" all appear in real passwords
+        # (p@ss@host, pa#ss@host). It stops only at "/" or whitespace; when a URL has no
+        # path, this can also mask the host. Over-masking is the safe direction.
+        re.compile(rf"(?i)(\b[a-z][a-z0-9+.-]*://[^\s:/@]*:){_NOT_PLACEHOLDER}[^\s/]*@"),
         r"\1[REDACTED]@",
     ),
     (
@@ -255,4 +257,8 @@ def prepare_for_llm(
         for title, lines in sections
         if any(lines)
     )
+    # Final pass over the assembled text. Section titles (e.g. log file names) were
+    # never redacted above, and redact is idempotent, so this only adds masking.
+    text, found = redact_with_stats(text)
+    counts.update(found)
     return PreparedContext(text=text, secrets_masked=counts)
