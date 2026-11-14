@@ -136,7 +136,7 @@ flakehunter analyze --junit "reports/**/*.xml" [--logs "logs/*.log"] [--diff pr.
 
 ```bash
 uv sync                                  # Python 3.11+, installs dev tools
-uv run pytest                            # 300 tests, no network or model needed
+uv run pytest                            # 300+ tests, no network or model needed
 uv run ruff check . && uv run mypy src tests
 uv run python scripts/try_llm.py         # one real call to local Ollama
 uv run python evals/run_evals.py --models llama3.2:3b   # needs Ollama
