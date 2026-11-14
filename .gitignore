@@ -1,1 +1,18 @@
+# Local notes
 learning/
+
+# Secrets
+.env
+
+# Python / tooling (generated, rebuilt automatically)
+.venv/
+__pycache__/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+
+# Datasets (large, licence-restricted; see M9)
+data/raw/
+
+# macOS
+.DS_Store
