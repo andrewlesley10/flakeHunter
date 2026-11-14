@@ -154,6 +154,7 @@ def test_connection_error_gives_no_verdict() -> None:
     assert result.verdict is None
     assert result.error is not None
     assert "unavailable" in result.error
+    assert result.unavailable
 
 
 @respx.mock
@@ -260,6 +261,6 @@ def test_non_json_200_gives_no_verdict() -> None:
 
 @respx.mock
 def test_http_403_names_the_status() -> None:
-    respx.post(URL).mock(return_value=httpx.Response(403, json={"error": "no models: read"}))
+    respx.post(URL).mock(return_value=httpx.Response(403, json={"error": "forbidden"}))
     result = run()
     assert result.error == "LLM unavailable (HTTP 403)"

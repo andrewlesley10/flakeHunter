@@ -185,13 +185,30 @@ Key design decisions and their trade-offs. Each entry gives the context, the dec
 
 **Decision:**
 - **One sticky comment.** The report starts with a hidden `<!-- flakehunter -->` marker. Each run lists the PR's comments (all pages), edits the one with the marker, or creates it. No comment ID is stored, because the Action has no state between runs.
-- **Forks are skipped up front.** If `head.repo` differs from the base repo, the token is read-only, so FlakeHunter writes the job summary and an annotation instead of letting the API return 403. The model isn't called either.
-- **Least privilege.** The example workflow grants only `contents: read`, `pull-requests: write` and `models: read`. There are no secrets to configure.
+- **Forks are skipped up front.** If `head.repo` differs from the base repo, the token is read-only, so FlakeHunter writes the job summary and an annotation instead of letting the API return 403. The model isn't run either.
+- **Least privilege.** The example workflow grants only `contents: read` and `pull-requests: write`. There are no secrets to configure (the model runs on the runner; see 012).
 - **Injection-safe composite steps.** Inputs reach the shell only through `env:`, never `${{ }}` inside `run:`.
 - **Fail open twice.** Python turns every error into a `::warning::` and exit 0, and the shell step adds `|| echo ::warning::` in case installing FlakeHunter itself fails.
 - **Composite Action run with `uvx --from $GITHUB_ACTION_PATH`.** uv installs Python and the package in seconds, with no Docker image to build or pull.
-- **Rate limits.** The openai SDK already retries 429s, honouring `Retry-After` (2 retries); after that, the pipeline's circuit breaker stops model calls and the report says so.
+- **Circuit breakers.** The openai SDK retries 429s, honouring `Retry-After` (2 retries); after a 429, or once the model server is unreachable, the pipeline stops calling the model and the report says so.
 
 **Why:** Re-runs must not spam the PR, fork PRs are common on public repos, and a tool that needs secrets or can turn a build red won't be adopted.
 
 **Trade-offs:** Listing comments costs one API call per 100 comments on every run. Fork PRs get no comment at all; a `workflow_run`-based two-stage design could fix that, but it adds complexity and a privileged workflow that has to be secured carefully.
+
+## 012 · GitHub Models was retired, so the model runs on the runner
+
+**Context:** The brief planned to use GitHub Models with the workflow's `GITHUB_TOKEN` inside Actions. The first real self-test run got `200 OK` with a plain-text body instead of a completion. GitHub retired GitHub Models on 30 July 2026 ([changelog](https://github.blog/changelog/2026-07-30-github-models-is-now-retired/)). The suggested replacements (Microsoft Foundry, Copilot) need accounts, keys or paid plans, which breaks the "costs nothing, no API key" constraint.
+
+**Decision:** The Action starts **llama.cpp's `llama-server`** on the GitHub-hosted runner with the **same open model used locally** (Llama 3.2 3B Instruct, Q4_K_M GGUF), and FlakeHunter talks to it through the same OpenAI-compatible client. The provider list became `ollama` (local) and `openai-compatible` (any other server). Both the 23 MB server binary and the 2 GB model are pinned and SHA-256-verified, and the model is cached with `actions/cache`. If anything in that step fails, the run continues with rules only.
+
+**Why not Ollama in CI too?** Its Linux bundle is 1.5 GB because it ships GPU libraries, while llama.cpp's CPU build is 23 MB and serves the same weights.
+
+**What the real run taught me:**
+- Fail-open worked exactly as designed: the job stayed green, and the comment was posted with rule verdicts.
+- It also exposed a bug: the SDK returned a `str` for a non-JSON 200, and the `AttributeError` escaped the classifier. The classifier now catches *any* exception and names what it got.
+- A second circuit breaker now stops model calls once the server is unreachable, as it already did after a 429.
+
+**Trade-offs:** CPU inference is slow (roughly 10–30 s per failure on a 4-vCPU runner), so a run with many unclear failures takes minutes, which `max-failures` bounds. The first run on a repo downloads 2 GB. A 3B model is weaker than the 70B model GitHub Models offered, which makes the rules-first design and the M9 numbers more important.
+
+**Would revisit if:** a free, keyless hosted inference option returns, or GitHub-hosted runners with GPUs become free for public repos.

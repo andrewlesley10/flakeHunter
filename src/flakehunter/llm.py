@@ -1,4 +1,4 @@
-"""LLM classifier: one OpenAI-compatible client for Ollama and GitHub Models.
+"""LLM classifier: one OpenAI-compatible client for Ollama, llama.cpp and similar servers.
 
 The model's reply is untrusted input. It is requested as JSON matching ``Verdict``'s
 schema, validated by pydantic, and repaired at most once (the validation error is
@@ -40,6 +40,7 @@ class LLMResult:
     elapsed_s: float = 0.0
     error: str | None = None
     rate_limited: bool = False
+    unavailable: bool = False  # the server could not be reached at all
 
 
 class Classifier(Protocol):
@@ -93,7 +94,7 @@ def parse_verdict(text: str, changed_files: Sequence[str]) -> Verdict:
 
 
 class OpenAICompatClassifier:
-    """Classifier for any OpenAI-compatible endpoint (Ollama, GitHub Models)."""
+    """Classifier for any OpenAI-compatible endpoint (Ollama, llama-server, ...)."""
 
     def __init__(self, settings: LLMSettings, client: OpenAI | None = None) -> None:
         self.settings = settings
@@ -179,7 +180,9 @@ class OpenAICompatClassifier:
                 )
             except openai.APIStatusError as e:  # 4xx/5xx: say which, it's actionable
                 return result(None, f"LLM unavailable (HTTP {e.status_code})")
-            except openai.APIError as e:  # connection, timeout
+            except openai.APIConnectionError as e:  # includes timeouts
+                return result(None, f"LLM unavailable ({type(e).__name__})", unavailable=True)
+            except openai.APIError as e:
                 return result(None, f"LLM unavailable ({type(e).__name__})")
             except UnexpectedResponseError as e:
                 return result(None, f"LLM gave an unexpected response: {e}")

@@ -217,21 +217,32 @@ def test_github_entry_never_raises(
     assert "::warning::FlakeHunter: HTTPStatusError" in err
 
 
-def test_missing_token_falls_back_to_rules(
+def test_missing_token_writes_summary_only(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     env = write_event(tmp_path)
     del env["GITHUB_TOKEN"]
-    for key in ("GITHUB_TOKEN", "GH_TOKEN"):
+    assert run_github(monkeypatch, env) == 0  # respx not active: no request may be made
+    assert "no GITHUB_TOKEN" in capsys.readouterr().err
+    assert "FlakeHunter" in (tmp_path / "summary.md").read_text()
+
+
+def test_bad_provider_config_falls_back_to_rules(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    env = write_event(tmp_path)
+    del env["GITHUB_TOKEN"]
+    env["FLAKEHUNTER_PROVIDER"] = "openai-compatible"  # but no FLAKEHUNTER_BASE_URL
+    for key in ("GITHUB_TOKEN", "FLAKEHUNTER_BASE_URL"):
         monkeypatch.delenv(key, raising=False)
     for key, value in env.items():
         monkeypatch.setenv(key, value)
-    assert main(["github", "--junit", JUNIT]) == 0  # LLM wanted, but no token
+    assert main(["github", "--junit", JUNIT]) == 0
     captured = capsys.readouterr()
     assert "using rules only" in captured.err
     assert "rules only" in captured.out
 
 
-def test_github_defaults_to_github_models() -> None:
+def test_provider_comes_from_environment_by_default() -> None:
     args = cli.build_parser().parse_args(["github", "--junit", "x"])
-    assert args.provider == "github-models"
+    assert args.provider is None

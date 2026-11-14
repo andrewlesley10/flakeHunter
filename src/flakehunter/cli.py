@@ -33,7 +33,7 @@ def add_common_args(p: argparse.ArgumentParser) -> None:
     )
     p.add_argument("--logs", default="", help="glob for raw log files")
     p.add_argument("--retry-report", default="", help="glob for JUnit XML from a re-run")
-    p.add_argument("--provider", choices=["ollama", "github-models"], default=None)
+    p.add_argument("--provider", choices=["ollama", "openai-compatible"], default=None)
     p.add_argument("--model", default=None, help="model name (default depends on provider)")
     p.add_argument("--max-failures", type=int, default=DEFAULT_MAX_FAILURES)
     p.add_argument("--no-llm", action="store_true", help="rules only, no model calls")
@@ -55,7 +55,6 @@ def build_parser() -> argparse.ArgumentParser:
     gh = sub.add_parser("github", help="run inside GitHub Actions: comment on the PR")
     add_common_args(gh)
     gh.add_argument("--label", default="true", help="add the likely-flaky label (true/false)")
-    gh.set_defaults(provider="github-models")
     return parser
 
 
@@ -120,7 +119,7 @@ def cmd_github(args: argparse.Namespace, env: dict[str, str]) -> int:
             github.annotate("warning", f"could not read the PR diff ({type(e).__name__})")
 
     if event is not None and event.is_fork:
-        args.no_llm = True  # a fork's token has no models: read either
+        args.no_llm = True  # don't spend CI minutes on a PR we can't comment on
     report = analyse(args, diff_text)
     markdown = to_markdown(report)
     print(markdown)

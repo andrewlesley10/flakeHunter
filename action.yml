@@ -1,5 +1,5 @@
 name: FlakeHunter CI Triage
-description: Classify failing CI tests (product bug, flaky, environment, test code) and explain them on the pull request. Free, open models.
+description: Classify failing CI tests (product bug, flaky, environment, test code) and explain them on the pull request. Free, open model, no API key.
 author: andrewlesley10
 branding:
   icon: search
@@ -17,10 +17,6 @@ inputs:
     description: Glob for JUnit XML from re-running the failed tests (optional; detects flaky tests)
     required: false
     default: ""
-  model:
-    description: GitHub Models model id
-    required: false
-    default: meta/llama-3.3-70b-instruct
   max-failures:
     description: Maximum number of failing tests to analyse per run
     required: false
@@ -30,11 +26,19 @@ inputs:
     required: false
     default: "true"
   use-llm:
-    description: Ask the model about failures the rules can't settle ("true" or "false")
+    description: Run the open model on the runner for failures the rules can't settle ("true" or "false"). "false" is rules only, and faster.
     required: false
     default: "true"
+  model-url:
+    description: GGUF model file to run with llama.cpp (any open instruct model)
+    required: false
+    default: https://huggingface.co/bartowski/Llama-3.2-3B-Instruct-GGUF/resolve/main/Llama-3.2-3B-Instruct-Q4_K_M.gguf
+  model-sha256:
+    description: SHA-256 of the model file; the download is rejected if it doesn't match
+    required: false
+    default: 6c1a2b41161032677be168d354123594c0e6e67d2b9227c84f296ad037c728ff
   github-token:
-    description: Token for the GitHub API and GitHub Models (needs pull-requests write and models read)
+    description: Token for reading the PR diff and writing the comment (needs pull-requests write)
     required: false
     default: ${{ github.token }}
 
@@ -46,6 +50,57 @@ runs:
         python-version: "3.12"
         enable-cache: false
 
+    # The model file (2 GB) is cached between runs, keyed by its checksum.
+    - name: Cache the model
+      if: inputs.use-llm == 'true'
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/flakehunter/models
+        key: flakehunter-model-${{ inputs.model-sha256 }}
+
+    # llama.cpp's server runs the open model on the runner's CPU and speaks the same
+    # OpenAI-compatible API as Ollama. Every download is checksum-verified. If anything
+    # here fails, FlakeHunter still runs with rules only.
+    - name: Start the model server
+      id: model
+      if: inputs.use-llm == 'true'
+      shell: bash
+      env:
+        MODEL_URL: ${{ inputs.model-url }}
+        MODEL_SHA256: ${{ inputs.model-sha256 }}
+        LLAMA_URL: https://github.com/ggml-org/llama.cpp/releases/download/b12031/llama-b12031-bin-ubuntu-x64.tar.gz
+        LLAMA_SHA256: 7a84c046913b052329f57dea8ce2d025fc66c71574448998b6ba3e16a4899906
+      run: |
+        set -u
+        start() {
+          [ "$RUNNER_OS" = "Linux" ] && [ "$(uname -m)" = "x86_64" ] || { echo "model server needs a Linux x64 runner"; return 1; }
+          dir="$RUNNER_TEMP/llama" && mkdir -p "$dir" ~/.cache/flakehunter/models || return 1
+          curl -fsSL --retry 3 -o "$dir/llama.tar.gz" "$LLAMA_URL" || return 1
+          echo "$LLAMA_SHA256  $dir/llama.tar.gz" | sha256sum -c --quiet || return 1
+          tar -xzf "$dir/llama.tar.gz" -C "$dir" || return 1
+          server=$(find "$dir" -type f -name llama-server | head -n 1)
+          [ -n "$server" ] || return 1
+          model=~/.cache/flakehunter/models/model.gguf
+          if ! echo "$MODEL_SHA256  $model" | sha256sum -c --quiet 2>/dev/null; then
+            curl -fsSL --retry 3 -o "$model" "$MODEL_URL" || return 1
+            echo "$MODEL_SHA256  $model" | sha256sum -c --quiet || return 1
+          fi
+          cd "$(dirname "$server")"
+          LD_LIBRARY_PATH=. nohup ./llama-server -m "$model" --host 127.0.0.1 --port 8080 \
+            --ctx-size 8192 --threads "$(nproc)" > "$RUNNER_TEMP/llama-server.log" 2>&1 &
+          for _ in $(seq 1 90); do
+            curl -sf http://127.0.0.1:8080/health > /dev/null && return 0
+            sleep 2
+          done
+          return 1
+        }
+        if start; then
+          echo "ready=true" >> "$GITHUB_OUTPUT"
+        else
+          echo "::warning::FlakeHunter: the model server did not start; using rules only."
+          tail -n 20 "$RUNNER_TEMP/llama-server.log" 2>/dev/null || true
+        fi
+
     # Inputs are passed through env, never interpolated into the script (script injection).
     # "|| echo" keeps the user's build green even if installing FlakeHunter itself fails.
     - name: Run FlakeHunter
@@ -54,15 +109,17 @@ runs:
         FH_JUNIT: ${{ inputs.junit }}
         FH_LOGS: ${{ inputs.logs }}
         FH_RETRY: ${{ inputs.retry-report }}
-        FH_MODEL: ${{ inputs.model }}
         FH_MAX: ${{ inputs.max-failures }}
         FH_LABEL: ${{ inputs.label }}
-        FH_USE_LLM: ${{ inputs.use-llm }}
+        FH_LLM_READY: ${{ steps.model.outputs.ready }}
         GITHUB_TOKEN: ${{ inputs.github-token }}
-        FLAKEHUNTER_PROVIDER: github-models
+        FLAKEHUNTER_PROVIDER: openai-compatible
+        FLAKEHUNTER_BASE_URL: http://127.0.0.1:8080/v1
+        FLAKEHUNTER_MODEL: llama-3.2-3b-instruct
+        FLAKEHUNTER_TIMEOUT_S: "180"
       run: |
         args=(github --junit "$FH_JUNIT" --logs "$FH_LOGS" --retry-report "$FH_RETRY"
-              --model "$FH_MODEL" --max-failures "$FH_MAX" --label "$FH_LABEL")
-        if [ "$FH_USE_LLM" != "true" ]; then args+=(--no-llm); fi
+              --max-failures "$FH_MAX" --label "$FH_LABEL")
+        if [ "$FH_LLM_READY" != "true" ]; then args+=(--no-llm); fi
         uvx --quiet --from "$GITHUB_ACTION_PATH" flakehunter "${args[@]}" \
           || echo "::warning::FlakeHunter could not run; your build result is unaffected."

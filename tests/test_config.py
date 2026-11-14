@@ -17,21 +17,27 @@ def test_env_overrides() -> None:
     assert (s.model, s.timeout_s) == ("qwen2.5:7b", 5.0)
 
 
-def test_github_models_uses_github_token() -> None:
-    s = LLMSettings.from_env({"FLAKEHUNTER_PROVIDER": "github-models", "GITHUB_TOKEN": "t0k"})
-    assert s.base_url == "https://models.github.ai/inference"
-    assert s.api_key == "t0k"
-    assert "t0k" not in repr(s)
+def test_openai_compatible_server() -> None:
+    s = LLMSettings.from_env(
+        {
+            "FLAKEHUNTER_PROVIDER": "openai-compatible",
+            "FLAKEHUNTER_BASE_URL": "http://127.0.0.1:8080/v1",
+            "FLAKEHUNTER_API_KEY": "s3cret",
+        }
+    )
+    assert (s.base_url, s.model, s.api_key) == ("http://127.0.0.1:8080/v1", "default", "s3cret")
+    assert "s3cret" not in repr(s)
 
 
-def test_github_models_without_token_is_an_error() -> None:
+def test_openai_compatible_needs_base_url() -> None:
     with pytest.raises(ConfigError):
-        LLMSettings.from_env({}, provider="github-models")
+        LLMSettings.from_env({}, provider="openai-compatible")
 
 
-def test_unknown_provider_is_an_error() -> None:
+@pytest.mark.parametrize("name", ["openai", "github-models"])
+def test_unknown_provider_is_an_error(name: str) -> None:
     with pytest.raises(ConfigError):
-        LLMSettings.from_env({"FLAKEHUNTER_PROVIDER": "openai"})
+        LLMSettings.from_env({"FLAKEHUNTER_PROVIDER": name})
 
 
 def test_with_model() -> None:

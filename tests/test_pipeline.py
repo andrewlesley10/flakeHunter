@@ -71,6 +71,13 @@ def test_rate_limit_stops_further_calls() -> None:
     assert any("rate-limited" in n for n in report.notes)
 
 
+def test_unreachable_server_stops_further_calls() -> None:
+    fake = FakeClassifier(result=LLMResult(verdict=None, error="LLM unavailable", unavailable=True))
+    report = run_pipeline(make(4), classifier=fake)
+    assert len(fake.calls) == 1
+    assert any("unreachable" in n for n in report.notes)
+
+
 def test_context_sent_to_classifier_is_redacted() -> None:
     fake = FakeClassifier()
     report = run_pipeline(make(1, f"auth failed: token={GH}"), classifier=fake)
