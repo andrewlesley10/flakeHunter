@@ -1,0 +1,58 @@
+# Runs the demo app's deliberately failing tests, then FlakeHunter on the results.
+# Only on PRs that touch the demo, so normal PRs aren't affected.
+name: Demo app
+
+on:
+  pull_request:
+    paths:
+      - "examples/demo-app/**"
+      - ".github/workflows/demo.yml"
+
+permissions:
+  contents: read
+  pull-requests: write
+  models: read
+
+jobs:
+  demo:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: examples/demo-app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install the demo app
+        run: uv venv -q && uv pip install -q -r requirements.txt
+
+      # No payments service is started on purpose: checkout fails with "connection refused".
+      - name: API tests (some fail on purpose)
+        continue-on-error: true
+        run: |
+          mkdir -p reports logs
+          .venv/bin/python -m pytest -p no:cacheprovider --junitxml=reports/pytest.xml 2>&1 | tee logs/pytest.log
+
+      - name: Re-run the API tests once (flaky detection)
+        continue-on-error: true
+        run: .venv/bin/python -m pytest -p no:cacheprovider -q --junitxml=retry/pytest.xml
+
+      - name: Start the app for Cypress
+        run: |
+          STOCK_MAX_LATENCY_S=6 nohup .venv/bin/uvicorn app.main:app --port 8000 > logs/server.log 2>&1 &
+          for i in $(seq 1 30); do curl -sf http://localhost:8000/items > /dev/null && break; sleep 1; done
+
+      - name: UI tests (some fail on purpose)
+        continue-on-error: true
+        run: npm install --no-audit --no-fund --silent && npx cypress run
+
+      - name: FlakeHunter
+        if: always()
+        uses: ./
+        with:
+          junit: examples/demo-app/reports/*.xml
+          retry-report: examples/demo-app/retry/*.xml
+          logs: examples/demo-app/logs/*.log
