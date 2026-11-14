@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="2" skipped="0" tests="3" time="0.019" timestamp="2026-11-14T20:43:39.346154+00:00" hostname="ci-runner"><testcase classname="test_checkout" name="test_basket_total" time="0.000" /><testcase classname="test_checkout" name="test_order_confirmation_arrives" time="0.000"><failure message="AssertionError: confirmation email not received within 2s&#10;assert not True">def test_order_confirmation_arrives() -&gt; None:
+        # Flaky by design: fails on the first run, passes when re-run.
+        first_run = not MARKER.exists()
+        MARKER.touch()
+&gt;       assert not first_run, "confirmation email not received within 2s"
+E       AssertionError: confirmation email not received within 2s
+E       assert not True
+
+test_checkout.py:14: AssertionError</failure></testcase><testcase classname="test_checkout" name="test_discount_applied" time="0.000"><failure message="assert (100 - ((100 * 10) / 10)) == 90">def test_discount_applied() -&gt; None:
+&gt;       assert 100 - 100 * 10 / 10 == 90  # real bug: fails every time
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       assert (100 - ((100 * 10) / 10)) == 90
+
+test_checkout.py:18: AssertionError</failure></testcase></testsuite></testsuites>

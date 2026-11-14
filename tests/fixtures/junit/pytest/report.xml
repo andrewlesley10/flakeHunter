@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="1" failures="2" skipped="1" tests="5" time="0.028" timestamp="2026-11-14T20:19:27.995172+00:00" hostname="ci-runner"><testcase classname="test_shop" name="test_total_without_discount" time="0.000" /><testcase classname="test_shop" name="test_discount_applied" time="0.000"><failure message="assert 0.0 == 90&#10; +  where 0.0 = add_discount(100, 10)">def test_discount_applied() -&gt; None:
+&gt;       assert add_discount(100, 10) == 90
+E       assert 0.0 == 90
+E        +  where 0.0 = add_discount(100, 10)
+
+test_shop.py:15: AssertionError</failure></testcase><testcase classname="test_shop" name="test_payment_service_reachable" time="0.002"><failure message="ConnectionRefusedError: [Errno 61] Connection refused">def test_payment_service_reachable() -&gt; None:
+&gt;       socket.create_connection(("127.0.0.1", 9), timeout=1)
+
+test_shop.py:19: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/opt/hostedtoolcache/Python/3.12.13/x64/lib/python3.12/socket.py:865: in create_connection
+    raise exceptions[0]
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+address = ('127.0.0.1', 9), timeout = 1, source_address = None
+all_errors = False
+
+    def create_connection(address, timeout=_GLOBAL_DEFAULT_TIMEOUT,
+                          source_address=None, *, all_errors=False):
+        """Connect to *address* and return the socket object.
+    
+        Convenience function.  Connect to *address* (a 2-tuple ``(host,
+        port)``) and return the socket object.  Passing the optional
+        *timeout* parameter will set the timeout on the socket instance
+        before attempting to connect.  If no *timeout* is supplied, the
+        global default timeout setting returned by :func:`getdefaulttimeout`
+        is used.  If *source_address* is set it must be a tuple of (host, port)
+        for the socket to bind as a source address before making the connection.
+        A host of '' or port 0 tells the OS to use the default. When a connection
+        cannot be created, raises the last error if *all_errors* is False,
+        and an ExceptionGroup of all errors if *all_errors* is True.
+        """
+    
+        host, port = address
+        exceptions = []
+        for res in getaddrinfo(host, port, 0, SOCK_STREAM):
+            af, socktype, proto, canonname, sa = res
+            sock = None
+            try:
+                sock = socket(af, socktype, proto)
+                if timeout is not _GLOBAL_DEFAULT_TIMEOUT:
+                    sock.settimeout(timeout)
+                if source_address:
+                    sock.bind(source_address)
+&gt;               sock.connect(sa)
+E               ConnectionRefusedError: [Errno 61] Connection refused
+
+/opt/hostedtoolcache/Python/3.12.13/x64/lib/python3.12/socket.py:850: ConnectionRefusedError</failure></testcase><testcase classname="test_shop" name="test_uses_broken_fixture" time="0.000"><error message="failed on setup with &quot;RuntimeError: fixture could not create client&quot;">@pytest.fixture
+    def broken_client() -&gt; None:
+&gt;       raise RuntimeError("fixture could not create client")
+E       RuntimeError: fixture could not create client
+
+test_shop.py:24: RuntimeError</error></testcase><testcase classname="test_shop" name="test_refunds" time="0.000"><skipped type="pytest.skip" message="not implemented">/home/runner/work/shop/shop/test_shop.py:31: not implemented</skipped></testcase></testsuite></testsuites>

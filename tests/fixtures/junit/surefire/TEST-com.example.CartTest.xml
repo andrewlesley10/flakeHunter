@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.CartTest" time="1.42" tests="4" errors="1" skipped="0" failures="1">
+  <properties>
+    <property name="java.version" value="21"/>
+  </properties>
+  <testcase name="totalWithoutDiscount" classname="com.example.CartTest" time="0.004"/>
+  <testcase name="totalAppliesDiscount" classname="com.example.CartTest" time="0.011">
+    <failure message="expected: &lt;81.0&gt; but was: &lt;90.0&gt;" type="org.opentest4j.AssertionFailedError"><![CDATA[org.opentest4j.AssertionFailedError: expected: <81.0> but was: <90.0>
+	at com.example.CartTest.totalAppliesDiscount(CartTest.java:27)]]></failure>
+  </testcase>
+  <testcase name="loadsPricesFromDb" classname="com.example.CartTest" time="1.003">
+    <error message="Connection refused" type="java.net.ConnectException"><![CDATA[java.net.ConnectException: Connection refused
+	at java.base/sun.nio.ch.Net.connect0(Native Method)
+	at com.example.PriceRepo.load(PriceRepo.java:41)]]></error>
+  </testcase>
+  <testcase name="checkoutIsIdempotent" classname="com.example.CartTest" time="0.402">
+    <flakyFailure message="expected: &lt;1&gt; but was: &lt;2&gt;" type="org.opentest4j.AssertionFailedError">
+      <stackTrace><![CDATA[org.opentest4j.AssertionFailedError: expected: <1> but was: <2>]]></stackTrace>
+    </flakyFailure>
+  </testcase>
+</testsuite>

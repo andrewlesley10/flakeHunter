@@ -1,0 +1,10 @@
+Run pytest --junitxml=reports/junit.xml
+[1m============================= test session starts ==============================[0m
+platform linux -- Python 3.12.13, pytest-9.2.0
+collected 5 items
+
+tests/test_shop.py [32m.[0m[31mF[0m[31mF[0m[31mE[0m[33ms[0m
+
+[31mE       ConnectionRefusedError: [Errno 111] Connection refused[0m
+[31m[1m=========== 2 failed, 1 passed, 1 skipped, 1 error in 0.03s ===========[0m
+Error: Process completed with exit code 1.
