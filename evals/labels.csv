@@ -1,0 +1,127 @@
+failure_id,source,true_category,notes,labelled_by
+test_auth::test_admin_role,scenarios,test_code,roles are case-sensitive; the test asks for 'Admin',design
+test_auth::test_login_fixture_user,scenarios,test_code,fixture 'login_user' does not exist,design
+test_auth::test_password_length,scenarios,test_code,the test expects a 4-character password to pass a min-8 rule,design
+test_auth::test_password_needs_symbol,scenarios,product_bug,password rule is missing the symbol requirement,design
+test_auth::test_sso_metadata,scenarios,environment,SSO service not running: connection refused,design
+test_auth::test_token_expires,scenarios,product_bug,a token is expired at exp (RFC 7519); < should be <=,design
+test_billing::test_exchange_rate_fresh,scenarios,flaky_test,random fetch age in the test,design
+test_billing::test_invoice_json_shape,scenarios,test_code,test reads key 'totals'; payload has 'total',design
+test_billing::test_ledger_service,scenarios,environment,ledger dependency returns 503,design
+test_billing::test_payment_gateway_reachable,scenarios,environment,connection refused,design
+test_billing::test_payment_gateway_tls,scenarios,environment,TLS handshake times out against an unresponsive gateway,design
+test_billing::test_pennies_conversion,scenarios,product_bug,float truncation: int(19.99*100) == 1998,design
+test_billing::test_refund_never_exceeds_payment,scenarios,product_bug,refund ignores the amount paid,design
+test_billing::test_statement_generation_time,scenarios,flaky_test,random latency vs a tight budget,design
+test_billing::test_vat_unknown_country_raises,scenarios,unknown,spec ambiguous: return 0 or raise? nothing in the output decides,design
+test_exports,scenarios,environment,optional dependency not installed in CI (collection error),design
+test_inventory::test_bin_location_format,scenarios,test_code,test expects 'A-07'; the format is 'A07',design
+test_inventory::test_cache_default,scenarios,flaky_test,order-dependent: polluted by the previous test; passes alone,design
+test_inventory::test_low_stock_includes_threshold,scenarios,product_bug,< should be <= at the threshold,design
+test_inventory::test_low_stock_parametrized[tee-0],scenarios,test_code,test data passes '0' as a string,design
+test_inventory::test_nearest_warehouse_is_chosen,scenarios,flaky_test,random.choice; passes 1 in 3,design
+test_inventory::test_restock_when_overstocked,scenarios,test_code,function clamps at 0 by design; test expects -2,design
+test_inventory::test_stock_feed_file_present,scenarios,environment,mounted feed volume missing in CI,design
+test_inventory::test_stock_sync_finishes_quickly,scenarios,flaky_test,"random latency, fails 1 in 3",design
+test_inventory::test_supplier_gateway,scenarios,environment,supplier API returns 502,design
+test_inventory::test_supplier_rate_limit,scenarios,environment,supplier API returns 429,design
+test_inventory::test_warehouse_api_responds,scenarios,environment,dependency accepts but never answers: read timeout,design
+test_inventory::test_warehouse_dns,scenarios,environment,host does not resolve,design
+test_notifications::test_digest_sent_before_deadline,scenarios,flaky_test,random sleep vs deadline,design
+test_notifications::test_messages_arrive_in_order,scenarios,flaky_test,async completion order is random,design
+test_notifications::test_outbox_is_fifo,scenarios,product_bug,deque.pop() is LIFO; should be popleft(),design
+test_notifications::test_push_provider,scenarios,environment,push provider returns 503,design
+test_notifications::test_quiet_hours_at_night,scenarios,product_bug,'and' should be 'or' across midnight,design
+test_notifications::test_sendgrid_key_present,scenarios,environment,secret not configured in CI,design
+test_notifications::test_smtp_relay,scenarios,environment,SMTP relay not running,design
+test_notifications::test_template_cache_writable,scenarios,environment,cache directory not provisioned on the runner,design
+test_notifications::test_webhook_receiver_timeout,scenarios,environment,receiver never answers,design
+test_orders::test_express_delivery_skips_weekend,scenarios,product_bug,weekday() < 6 counts Saturday as a working day,design
+test_orders::test_half_coupon,scenarios,test_code,expected value forgets the 20% tax,design
+test_orders::test_order_created_within_second,scenarios,flaky_test,random latency vs budget,design
+test_orders::test_order_ids_are_sequential,scenarios,flaky_test,order-dependent: shared module state; passes alone,design
+test_orders::test_random_sample_of_orders_is_valid,scenarios,flaky_test,random quantity can be 0,design
+test_orders::test_reserve_stock_never_negative,scenarios,product_bug,no check for insufficient stock,design
+test_orders::test_split_payment_adds_up,scenarios,product_bug,shares lose a penny to rounding,design
+test_orders::test_subtotal_counts_quantities,scenarios,product_bug,subtotal ignores quantity,design
+test_orders::test_total_rounding,scenarios,test_code,expected value is wrong: 0.30 * 1.2 = 0.36,design
+test_reports::test_dashboard_sampling,scenarios,flaky_test,random sample,design
+test_reports::test_export_flag,scenarios,unknown,pytest.fail() with no message,design
+test_reports::test_percent_change_from_zero,scenarios,product_bug,division by zero not handled,design
+test_reports::test_quarter_of_december,scenarios,product_bug,same quarter() bug,design
+test_reports::test_quarter_of_march,scenarios,product_bug,month // 3 + 1 is wrong; should be (month - 1) // 3 + 1,design
+test_reports::test_render_under_budget,scenarios,flaky_test,random latency vs budget,design
+test_reports::test_report_integrity,scenarios,unknown,bare assert False with no detail,design
+test_reports::test_unexplained,scenarios,unknown,bare assert with no detail,design
+test_search::test_empty_query,scenarios,product_bug,''.split(' ') returns [''],design
+test_search::test_load_more_button_present,scenarios,test_code,stale selector: the button id is 'load-more',design
+test_search::test_rank_best_first,scenarios,product_bug,sorted ascending instead of descending,design
+test_search::test_result_count,scenarios,test_code,expected count is wrong: the page has 2 results,design
+test_search::test_results_list_present,scenarios,test_code,selector uses an id; the list only has a class,design
+test_search::test_suggestions_keep_order,scenarios,flaky_test,shuffle makes the order random,design
+test_search::test_tokenize_ignores_double_spaces,scenarios,product_bug,split(' ') keeps empty tokens,design
+test_shipping::test_carrier_api_dns,scenarios,environment,host does not resolve,design
+test_shipping::test_carrier_api_up,scenarios,environment,carrier returns 503,design
+test_shipping::test_eta_minimum_one_day,scenarios,product_bug,short distances give 0 days,design
+test_shipping::test_label_payload_service,scenarios,test_code,test reads 'service_level'; payload has 'service',design
+test_shipping::test_label_printer,scenarios,environment,printer service not running,design
+test_shipping::test_rates_cached_quickly,scenarios,environment,dependency never answers,design
+test_shipping::test_tracking_url_case,scenarios,test_code,tracking codes are upper-cased by design,design
+test_shipping::test_unknown_carrier,scenarios,unknown,spec ambiguous: KeyError or 0.0?,design
+test_users::test_admin_credentials_configured,scenarios,environment,secret not configured,design
+test_users::test_age_band_boundary,scenarios,unknown,spec ambiguous: is 65 adult or senior?,design
+test_users::test_avatar_service,scenarios,environment,avatar service returns 503,design
+test_users::test_concurrent_signups_are_counted,scenarios,flaky_test,race on a shared counter,design
+test_users::test_email_is_lowercased,scenarios,product_bug,normalise_email doesn't lowercase,design
+test_users::test_identity_provider_reachable,scenarios,environment,connection refused,design
+test_users::test_password_hash_is_salted,scenarios,test_code,sha256 hex is 64 chars; test expects 32,design
+test_users::test_profile_has_email,scenarios,test_code,test reads 'e-mail'; profile has 'email',design
+test_users::test_user_can_rename,scenarios,test_code,broken fixture: seeds a column that doesn't exist,design
+test_users::test_user_count_matches,scenarios,test_code,fixture has no 'expected_users' key,design
+test_users::test_user_store_opens,scenarios,environment,database volume missing,design
+logchunks:CoffeeScript/Atom@atom/failed/544911466,logchunks,environment,real Atom window timed out on the CI machine; could also be flaky,claude
+logchunks:PHP/bcit-ci@CodeIgniter/failed/523143840,logchunks,unknown,two strings differ; nothing shows which side is wrong,claude
+logchunks:TeX/adambard@learnxinyminutes-docs/failed/487309865,logchunks,product_bug,invalid YAML in a content file,claude
+logchunks:TeX/cplusplus@draft/failed/566236411,logchunks,product_bug,LaTeX overfull box treated as an error: content defect,claude
+logchunks:Clojure/LightTable@LightTable/failed/557196001,logchunks,environment,CI install script not executable (Permission denied),claude
+logchunks:Haskell/koalaman@shellcheck/failed/501296929,logchunks,environment,function missing from the installed library version (toolchain),claude
+logchunks:VimL/mhinz@vim-galore/failed/443978045,logchunks,product_bug,lint: line too long,claude
+logchunks:Ruby/rails@rails/failed/517367844,logchunks,unknown,class identity mismatch after autoloading; cause unclear,claude
+logchunks:VimL/mhinz@vim-galore/failed/374778890,logchunks,product_bug,lint: line too long,claude
+logchunks:Swift/SwiftyJSON@SwiftyJSON/failed/431807215,logchunks,environment,compiler on the CI image is too old for the attribute,claude
+logchunks:Rust/redox-os@redox/failed/387174339,logchunks,environment,package download returned 404,claude
+logchunks:Java/ReactiveX@RxJava/failed/564360281,logchunks,flaky_test,concurrency test asserting on the thread used; known-flaky pattern,claude
+logchunks:C/git@git/failed/565119978,logchunks,unknown,test tool rejects a flag; unclear whether the test or the tool changed,claude
+logchunks:CSS/jgthms@bulma/failed/437082455,logchunks,product_bug,invalid Sass in the stylesheet,claude
+logchunks:Clojure/technomancy@leiningen/failed/242695567,logchunks,environment,CI defaulted to Ruby and found no Rakefile (CI configuration),claude
+logchunks:Lua/luvit@luvit/failed/232608416,logchunks,environment,dependency fetch failed: hash not found in the package store,claude
+logchunks:Clojure/LightTable@LightTable/failed/557187564,logchunks,environment,CI install script not executable (Permission denied),claude
+logchunks:Scala/scala@scala/failed/566726054,logchunks,product_bug,compiler crash on a negative test: the compiler is the product,claude
+logchunks:C/php@php-src/failed/529330924,logchunks,test_code,expected test output not updated for a new deprecation notice,claude
+logchunks:Objective-C/dkhamsing@open-source-ios-apps/failed/562475335,logchunks,environment,external link returned 522 (third-party site down),claude
+logchunks:HTML/necolas@normalize.css/failed/227809620,logchunks,product_bug,lint: missing newline at end of file,claude
+logchunks:R/twitter@AnomalyDetection/failed/57281902,logchunks,unknown,R test run failed with no detail in the chunk,claude
+logchunks:JavaScript/FreeCodeCamp@freecodecamp/failed/566340191,logchunks,unknown,challenge solution check failed; unclear whether the solution or the test is wrong,claude
+logchunks:Perl/sjdy521@Mojo-Webqq/failed/332708478,logchunks,environment,HTTPS connect timeout in a test,claude
+logchunks:Perl/sjdy521@Mojo-Webqq/failed/373752512,logchunks,environment,HTTPS connect timeout in a test,claude
+logchunks:Python/vinta@awesome-python/failed/125541453,logchunks,product_bug,README contains outdated links (301 redirects),claude
+logchunks:TeX/cplusplus@draft/failed/566259827,logchunks,product_bug,LaTeX overfull box treated as an error,claude
+logchunks:CSS/google@material-design-icons/failed/97618287,logchunks,environment,CI defaulted to Ruby and found no Rakefile (CI configuration),claude
+logchunks:Perl/major@MySQLTuner-perl/failed/388254510,logchunks,product_bug,Perl::Critic style violations,claude
+logchunks:CSS/twbs@bootstrap/failed/565973566,logchunks,unknown,docs link check failed on a locally built asset; cause unclear,claude
+test_catalog::test_catalog_fixture_shape,scenarios,test_code,fixture 'catalog_page' does not exist,design
+test_catalog::test_export_is_sorted,scenarios,product_bug,export keeps catalogue order instead of sorting,design
+test_catalog::test_featured_item_random,scenarios,flaky_test,random choice in the test,design
+test_catalog::test_locale_currency,scenarios,environment,runner locale is not en_GB,design
+test_catalog::test_nightly_window,scenarios,flaky_test,depends on the clock's microseconds,design
+test_catalog::test_parallel_imports_finish,scenarios,flaky_test,test sleeps instead of joining the threads: a race,design
+test_catalog::test_price_range_inclusive,scenarios,product_bug,range excludes its bounds; it should include them,design
+test_catalog::test_register_hat_again_in_new_session,scenarios,flaky_test,order-dependent: the previous test registered 'hat'; passes alone,design
+test_catalog::test_sale_price,scenarios,test_code,expected value is wrong: 20% off 20.0 is 16.0,design
+test_catalog::test_sku_exists[teee],scenarios,test_code,typo in the test data,design
+test_catalog::test_tag_lookup_uses_api,scenarios,test_code,tags are lower-case by design; the test asks for 'Sale',design
+test_shipping::test_pickup_slot_available,scenarios,flaky_test,random availability,design
+examples.demo-app.tests.test_api::test_cart_total_with_discount,demo,product_bug,the PR subtracts the percentage as a currency amount,design
+examples.demo-app.tests.test_api::test_discount_for_members,demo,test_code,the new test asks for a fixture that doesn't exist,design
+examples.demo-app.tests.test_api::test_checkout_charges_card,demo,environment,payments service not started in CI,design
+examples.demo-app.tests.test_api::test_stock_lookup_is_fast,demo,flaky_test,random latency vs a 0.4 s budget,design
