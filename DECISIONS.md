@@ -142,7 +142,7 @@ Key design decisions and their trade-offs. Each entry gives the context, the dec
 **Context:** A failure can have a rule hint, an LLM verdict, both or neither, and they can disagree.
 
 **Decision** (`combine.py`):
-1. Rule at or above 0.8 and no LLM call → `rules`.
+1. No LLM call (the rule was at or above 0.8, or the LLM was turned off) → `rules`.
 2. Rule and LLM agree → `combined`, with the higher confidence.
 3. They disagree → the LLM wins if its confidence is at least 0.7, otherwise the rule; either way confidence × 0.75, and the disagreement is noted.
 4. LLM only → `llm`.
@@ -163,3 +163,18 @@ Key design decisions and their trade-offs. Each entry gives the context, the dec
 **Why:** Delimiting can't make injection impossible, but limiting what the output can *do* makes a successful injection harmless: at worst, one wrong category in a comment.
 
 **Trade-offs:** None worth the name; the delimiters cost a few tokens.
+
+## 010 · Pure pipeline, thin CLI, fail open at the edge
+
+**Context:** The same analysis has to run from a terminal, inside GitHub Actions and in the eval harness.
+
+**Decision:**
+- `run_pipeline()` takes parsed inputs and returns a `Report`. It does no argument parsing, file reading or posting.
+- `cli.py` only loads files and renders. Any exception becomes `flakehunter: warning: ...` on stderr with **exit code 0**; `--strict` re-raises for debugging.
+- At most `--max-failures` (default 10) failures are analysed; the rest are counted in the report. After a 429 the model is not called again in that run.
+- The report puts a summary table first, collapses evidence in `<details>`, and shows cost in the footer (model, calls, tokens, seconds, secrets masked).
+- All CI-derived text in the Markdown is escaped (`|`, backticks, HTML, `@mentions`), and code fences grow if the evidence contains backticks.
+
+**Why:** A pure core is easy to test and reuse. A triage tool that breaks builds would be uninstalled the first time it did. The cap protects the free rate limit when one broken service fails 300 tests, which wouldn't add any insight anyway.
+
+**Trade-offs:** With a cap, some failures get no verdict at all; the report says how many. Exit code 0 means a misconfigured FlakeHunter is silent unless you read the warning, which is why the warning is also printed as a GitHub `::warning::` annotation in M7.
