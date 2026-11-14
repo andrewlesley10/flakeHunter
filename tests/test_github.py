@@ -23,8 +23,8 @@ def client() -> GitHubClient:
     return GitHubClient("t0ken", REPO, http=httpx.Client())
 
 
-def comment(id_: int, body: str) -> dict[str, Any]:
-    return {"id": id_, "body": body}
+def comment(id_: int, body: str, user_type: str = "Bot") -> dict[str, Any]:
+    return {"id": id_, "body": body, "user": {"login": "github-actions[bot]", "type": user_type}}
 
 
 # --- client ----------------------------------------------------------------
@@ -61,6 +61,18 @@ def test_upsert_updates_existing_marker_comment() -> None:
     assert client().upsert_comment(7, f"{MARKER} new") == "updated"
     assert patch.called
     assert not post.called
+
+
+@respx.mock
+def test_upsert_ignores_marker_pasted_by_a_human() -> None:
+    respx.get(COMMENTS).mock(
+        return_value=httpx.Response(200, json=[comment(9, f"{MARKER} spoof", user_type="User")])
+    )
+    patch = respx.patch(f"{API}/repos/{REPO}/issues/comments/9")
+    post = respx.post(COMMENTS).mock(return_value=httpx.Response(201, json={}))
+    assert client().upsert_comment(7, f"{MARKER} new") == "created"
+    assert not patch.called
+    assert post.called
 
 
 @respx.mock

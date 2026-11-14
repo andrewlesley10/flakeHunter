@@ -60,7 +60,12 @@ class GitHubClient:
         return resp.text
 
     def find_comment(self, number: int, marker: str = MARKER) -> int | None:
-        """Return the id of the first comment containing ``marker``, searching all pages."""
+        """Return the id of FlakeHunter's earlier comment, searching all pages.
+
+        A comment counts only if it contains the marker *and* was written by a bot
+        account (``github-actions[bot]`` for the workflow token). Anyone can paste the
+        marker into a comment; without the author check we would overwrite theirs.
+        """
         page = 1
         while True:
             comments = self._request(
@@ -69,7 +74,8 @@ class GitHubClient:
                 params={"per_page": 100, "page": page},
             ).json()
             for comment in comments:
-                if marker in (comment.get("body") or ""):
+                author = comment.get("user") or {}
+                if marker in (comment.get("body") or "") and author.get("type") == "Bot":
                     return int(comment["id"])
             if len(comments) < 100:
                 return None
