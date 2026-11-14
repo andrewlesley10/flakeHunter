@@ -1,0 +1,95 @@
+test,category,changed_files,notes
+test_auth::test_admin_role,test_code,tests/test_auth.py,roles are case-sensitive; the test asks for 'Admin'
+test_auth::test_login_fixture_user,test_code,tests/test_auth.py,fixture 'login_user' does not exist
+test_auth::test_mfa_code_window,flaky_test,app/auth.py,fails when the 30 s window rolls over mid-test
+test_auth::test_password_length,test_code,app/auth.py,the test expects a 4-character password to pass a min-8 rule
+test_auth::test_password_needs_symbol,product_bug,app/auth.py,password rule is missing the symbol requirement
+test_auth::test_session_token_not_expired,flaky_test,,timing margin of 20 ms
+test_auth::test_sso_metadata,environment,app/auth.py,SSO service not running: connection refused
+test_auth::test_token_expires,product_bug,app/auth.py,a token is expired at exp (RFC 7519); < should be <=
+test_billing::test_exchange_rate_fresh,flaky_test,app/billing.py,random fetch age in the test
+test_billing::test_invoice_json_shape,test_code,tests/test_billing.py,test reads key 'totals'; payload has 'total'
+test_billing::test_ledger_service,environment,,ledger dependency returns 503
+test_billing::test_payment_gateway_reachable,environment,README.md,connection refused
+test_billing::test_payment_gateway_tls,environment,app/billing.py,TLS handshake times out against an unresponsive gateway
+test_billing::test_pennies_conversion,product_bug,,float truncation: int(19.99*100) == 1998
+test_billing::test_refund_never_exceeds_payment,product_bug,,refund ignores the amount paid
+test_billing::test_statement_generation_time,flaky_test,app/billing.py,random latency vs a tight budget
+test_billing::test_vat_unknown_country_raises,unknown,README.md,spec ambiguous: return 0 or raise? nothing in the output decides
+test_exports,environment,app/exports.py,optional dependency not installed in CI (collection error)
+test_inventory::test_bin_location_format,test_code,tests/test_inventory.py,test expects 'A-07'; the format is 'A07'
+test_inventory::test_cache_default,flaky_test,README.md,order-dependent: polluted by the previous test; passes alone
+test_inventory::test_low_stock_includes_threshold,product_bug,app/inventory.py,< should be <= at the threshold
+test_inventory::test_low_stock_parametrized[tee-0],test_code,tests/test_inventory.py,test data passes '0' as a string
+test_inventory::test_nearest_warehouse_is_chosen,flaky_test,,random.choice; passes 1 in 3
+test_inventory::test_restock_when_overstocked,test_code,tests/test_inventory.py,function clamps at 0 by design; test expects -2
+test_inventory::test_stock_feed_file_present,environment,,mounted feed volume missing in CI
+test_inventory::test_stock_sync_finishes_quickly,flaky_test,,"random latency, fails 1 in 3"
+test_inventory::test_supplier_gateway,environment,,supplier API returns 502
+test_inventory::test_supplier_rate_limit,environment,,supplier API returns 429
+test_inventory::test_warehouse_api_responds,environment,,dependency accepts but never answers: read timeout
+test_inventory::test_warehouse_dns,environment,app/inventory.py,host does not resolve
+test_notifications::test_digest_sent_before_deadline,flaky_test,,random sleep vs deadline
+test_notifications::test_messages_arrive_in_order,flaky_test,,async completion order is random
+test_notifications::test_outbox_is_fifo,product_bug,app/notifications.py,deque.pop() is LIFO; should be popleft()
+test_notifications::test_push_provider,environment,,push provider returns 503
+test_notifications::test_quiet_hours_at_night,product_bug,,'and' should be 'or' across midnight
+test_notifications::test_sendgrid_key_present,environment,,secret not configured in CI
+test_notifications::test_smtp_relay,environment,,SMTP relay not running
+test_notifications::test_template_cache_writable,environment,app/notifications.py,cache directory not provisioned on the runner
+test_notifications::test_webhook_receiver_timeout,environment,README.md,receiver never answers
+test_orders::test_express_delivery_skips_weekend,product_bug,app/orders.py,weekday() < 6 counts Saturday as a working day
+test_orders::test_half_coupon,test_code,tests/test_orders.py,expected value forgets the 20% tax
+test_orders::test_order_created_within_second,flaky_test,,random latency vs budget
+test_orders::test_order_ids_are_sequential,flaky_test,README.md,order-dependent: shared module state; passes alone
+test_orders::test_random_sample_of_orders_is_valid,flaky_test,,random quantity can be 0
+test_orders::test_reserve_stock_never_negative,product_bug,,no check for insufficient stock
+test_orders::test_split_payment_adds_up,product_bug,,shares lose a penny to rounding
+test_orders::test_subtotal_counts_quantities,product_bug,app/orders.py,subtotal ignores quantity
+test_orders::test_total_rounding,test_code,tests/test_orders.py,expected value is wrong: 0.30 * 1.2 = 0.36
+test_reports::test_dashboard_sampling,flaky_test,,random sample
+test_reports::test_export_flag,unknown,README.md,pytest.fail() with no message
+test_reports::test_percent_change_from_zero,product_bug,app/reports.py,division by zero not handled
+test_reports::test_quarter_of_december,product_bug,app/reports.py,same quarter() bug
+test_reports::test_quarter_of_march,product_bug,app/reports.py,month // 3 + 1 is wrong; should be (month - 1) // 3 + 1
+test_reports::test_render_under_budget,flaky_test,,random latency vs budget
+test_reports::test_report_integrity,unknown,,bare assert False with no detail
+test_reports::test_unexplained,unknown,,bare assert with no detail
+test_search::test_empty_query,product_bug,app/search.py,''.split(' ') returns ['']
+test_search::test_load_more_button_present,test_code,tests/test_search.py,stale selector: the button id is 'load-more'
+test_search::test_rank_best_first,product_bug,app/search.py,sorted ascending instead of descending
+test_search::test_result_count,test_code,,expected count is wrong: the page has 2 results
+test_search::test_results_list_present,test_code,tests/test_search.py,selector uses an id; the list only has a class
+test_search::test_suggestions_keep_order,flaky_test,,shuffle makes the order random
+test_search::test_tokenize_ignores_double_spaces,product_bug,app/search.py,split(' ') keeps empty tokens
+test_shipping::test_carrier_api_dns,environment,README.md,host does not resolve
+test_shipping::test_carrier_api_up,environment,,carrier returns 503
+test_shipping::test_eta_minimum_one_day,product_bug,tests/test_shipping.py,short distances give 0 days
+test_shipping::test_label_payload_service,test_code,tests/test_shipping.py,test reads 'service_level'; payload has 'service'
+test_shipping::test_label_printer,environment,,printer service not running
+test_shipping::test_pickup_slot_available,flaky_test,app/shipping.py,random availability
+test_shipping::test_rates_cached_quickly,environment,app/shipping.py,dependency never answers
+test_shipping::test_tracking_url_case,test_code,tests/test_shipping.py,tracking codes are upper-cased by design
+test_shipping::test_unknown_carrier,unknown,app/shipping.py,spec ambiguous: KeyError or 0.0?
+test_users::test_admin_credentials_configured,environment,,secret not configured
+test_users::test_age_band_boundary,unknown,app/users.py,spec ambiguous: is 65 adult or senior?
+test_users::test_avatar_service,environment,,avatar service returns 503
+test_users::test_concurrent_signups_are_counted,flaky_test,app/users.py,race on a shared counter
+test_users::test_email_is_lowercased,product_bug,app/users.py,normalise_email doesn't lowercase
+test_users::test_identity_provider_reachable,environment,app/users.py,connection refused
+test_users::test_password_hash_is_salted,test_code,tests/test_users.py,sha256 hex is 64 chars; test expects 32
+test_users::test_profile_has_email,test_code,tests/test_users.py,test reads 'e-mail'; profile has 'email'
+test_users::test_user_can_rename,test_code,tests/test_users.py,broken fixture: seeds a column that doesn't exist
+test_users::test_user_count_matches,test_code,tests/test_users.py,fixture has no 'expected_users' key
+test_users::test_user_store_opens,environment,app/users.py,database volume missing
+test_catalog::test_price_range_inclusive,product_bug,app/catalog.py,range excludes its bounds; it should include them
+test_catalog::test_sale_price,test_code,tests/test_catalog.py,expected value is wrong: 20% off 20.0 is 16.0
+test_catalog::test_export_is_sorted,product_bug,app/catalog.py,export keeps catalogue order instead of sorting
+test_catalog::test_catalog_fixture_shape,test_code,tests/test_catalog.py,fixture 'catalog_page' does not exist
+test_catalog::test_tag_lookup_uses_api,test_code,,tags are lower-case by design; the test asks for 'Sale'
+test_catalog::test_parallel_imports_finish,flaky_test,,test sleeps instead of joining the threads: a race
+test_catalog::test_nightly_window,flaky_test,,depends on the clock's microseconds
+test_catalog::test_featured_item_random,flaky_test,,random choice in the test
+test_catalog::test_locale_currency,environment,README.md,runner locale is not en_GB
+test_catalog::test_sku_exists[teee],test_code,tests/test_catalog.py,typo in the test data
+test_catalog::test_register_hat_again_in_new_session,flaky_test,,order-dependent: the previous test registered 'hat'; passes alone
