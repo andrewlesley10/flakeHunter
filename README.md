@@ -111,7 +111,7 @@ flakehunter analyze --junit "reports/**/*.xml" [--logs "logs/*.log"] [--diff pr.
 - **Comment hijack.** Only bot-authored comments with this job's marker are ever edited; a marker pasted by a person is ignored.
 - **Forks.** PRs from forks get a read-only token, so FlakeHunter writes the job summary instead of commenting.
 - **Fails open, twice.** Any error becomes a `::warning::` and exit code 0, and the shell step has a second guard. FlakeHunter never turns a build red.
-- **Supply chain.** The model server and the model are pinned by version and SHA-256.
+- **Supply chain.** The model server and the model are pinned by version and SHA-256, and the actions FlakeHunter uses are pinned to commit SHAs (a test enforces it).
 
 ## Limitations
 
