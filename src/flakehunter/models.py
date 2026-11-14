@@ -40,3 +40,6 @@ class FileDiff(BaseModel):
     status: FileStatus
     binary: bool = False
     added_lines: tuple[str, ...] = ()  # content of "+" lines, without the "+"
+
+
+Outcome = Literal["passed", "failed", "skipped"]

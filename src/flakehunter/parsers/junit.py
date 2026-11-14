@@ -22,7 +22,7 @@ from xml.parsers import expat
 
 from junitparser import Error, Failure, JUnitXml
 
-from flakehunter.models import SourceFormat, TestFailure
+from flakehunter.models import Outcome, SourceFormat, TestFailure
 
 
 class UnsafeXMLError(ValueError):
@@ -71,6 +71,27 @@ def parse_junit_glob(pattern: str) -> list[TestFailure]:
     for match in sorted(glob(pattern, recursive=True)):
         failures.extend(parse_junit(Path(match)))
     return failures
+
+
+def parse_outcomes(path: Path) -> dict[str, Outcome]:
+    """Return the outcome of every test case in the file, keyed by the same id as TestFailure.
+
+    Unlike ``parse_junit`` this includes passing tests, which is what a retry report
+    needs: a test that is *missing* from the failures may have passed or never run.
+    Shares the DTD check and id format with ``parse_junit`` so ids always line up.
+    """
+    _reject_dtd(path)
+    outcomes: dict[str, Outcome] = {}
+    for suite in JUnitXml.fromfile(str(path)):
+        for case in suite:
+            outcome: Outcome = "passed"
+            for result in case.result:
+                if isinstance(result, (Failure, Error)):
+                    outcome = "failed"
+                    break
+                outcome = "skipped"
+            outcomes[_make_id(_clean(case.classname), _clean(case.name))] = outcome
+    return outcomes
 
 
 def detect_format(path: Path, xml: JUnitXml) -> SourceFormat:

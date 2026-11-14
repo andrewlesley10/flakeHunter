@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="2" time="0.017" timestamp="2026-11-14T20:43:39.523749+00:00" hostname="ci-runner"><testcase classname="test_checkout" name="test_order_confirmation_arrives" time="0.000" /><testcase classname="test_checkout" name="test_discount_applied" time="0.000"><failure message="assert (100 - ((100 * 10) / 10)) == 90">def test_discount_applied() -&gt; None:
+&gt;       assert 100 - 100 * 10 / 10 == 90  # real bug: fails every time
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       assert (100 - ((100 * 10) / 10)) == 90
+
+test_checkout.py:18: AssertionError</failure></testcase></testsuite></testsuites>
