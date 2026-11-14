@@ -1,20 +1,19 @@
 """Merge the rule hint and the LLM verdict into the one verdict shown on the PR.
 
 Policy (see DECISIONS.md 007):
-1. Rules confident (>= LLM_THRESHOLD) and no LLM call: ``rules``.
+1. No LLM call (the rule was confident, or the LLM was off): ``rules``.
 2. Rule and LLM agree: ``combined``; confidence is the higher of the two.
 3. They disagree: trust the LLM if its confidence is >= LLM_TRUST, otherwise the
    rule; either way confidence is scaled down by DISAGREEMENT_PENALTY.
 4. LLM only (no rule fired): ``llm``.
-5. LLM failed or wasn't asked: the rule hint, capped at FALLBACK_CAP if the LLM was
-   asked and failed, or ``unknown`` at 0.0: ``fallback``.
+5. LLM failed: the rule hint capped at FALLBACK_CAP, or ``unknown`` at 0.0: ``fallback``.
+   With no rule and no LLM verdict at all, the answer is ``unknown`` (``fallback``).
 """
 
 from typing import Any
 
 from flakehunter.models import Category, FinalVerdict, RuleHint, TestFailure, Verdict
 from flakehunter.redact import redact
-from flakehunter.rules import is_settled
 
 LLM_TRUST = 0.7
 DISAGREEMENT_PENALTY = 0.75
@@ -169,10 +168,11 @@ def combine(
                     "note": llm_error,
                 }
             )
-        if llm_error is None and is_settled(hint):
+        if llm_error is None:  # the LLM was not asked (settled, --no-llm, or capped)
             return _from_hint(failure, hint, "rules", hint.confidence)
-        confidence = min(hint.confidence, FALLBACK_CAP) if llm_error else hint.confidence
-        return _from_hint(failure, hint, "fallback", confidence, note=llm_error)
+        return _from_hint(
+            failure, hint, "fallback", min(hint.confidence, FALLBACK_CAP), note=llm_error
+        )
 
     if hint is None:
         return _from_llm(failure, llm, "llm", llm.confidence)

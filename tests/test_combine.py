@@ -62,7 +62,7 @@ def test_llm_failed_falls_back_to_capped_hint() -> None:
 
 def test_weak_hint_without_llm_keeps_its_confidence() -> None:
     v = combine(F, hint("environment", 0.6), None)
-    assert (v.decided_by, v.confidence) == ("fallback", 0.6)
+    assert (v.decided_by, v.confidence) == ("rules", 0.6)
 
 
 def test_nothing_is_unknown() -> None:
