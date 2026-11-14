@@ -212,3 +212,13 @@ Key design decisions and their trade-offs. Each entry gives the context, the dec
 **Trade-offs:** CPU inference is slow (roughly 10–30 s per failure on a 4-vCPU runner), so a run with many unclear failures takes minutes, which `max-failures` bounds. The first run on a repo downloads 2 GB. A 3B model is weaker than the 70B model GitHub Models offered, which makes the rules-first design and the M9 numbers more important.
 
 **Would revisit if:** a free, keyless hosted inference option returns, or GitHub-hosted runners with GPUs become free for public repos.
+
+## 013 · A demo app that fails on purpose
+
+**Context:** A recruiter or a user should be able to see a real FlakeHunter comment on a real PR without installing anything, and the evals need failures whose true category is known.
+
+**Decision:** `examples/demo-app` is a tiny FastAPI shop with pytest and Cypress tests. `main` holds correct code. On `main`, CI-only failures come from the environment (the payments service is never started) and from timing (a stock check with random latency). A long-lived, never-merged branch `demo/broken-checkout` adds a real product bug, a broken test fixture and a stale Cypress selector. Its PR is the public demo. The workflow runs only for PRs that touch the demo (`paths:` filter), with `continue-on-error` on the test steps and `if: always()` on FlakeHunter.
+
+**Why:** Failures I engineered have ground truth by construction, and every category is exercised through the real parsers, rules, model and GitHub path. Test names are neutral, so the model can't read the answer off the name.
+
+**Trade-offs:** Engineered failures are cleaner than real ones. The evals (014) therefore also use real build logs from LogChunks, and report the sources separately.
