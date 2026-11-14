@@ -35,3 +35,13 @@ def test_action_never_interpolates_inputs_into_scripts() -> None:
     text = (ROOT / "action.yml").read_text(encoding="utf-8")
     for run_block in re.findall(r"run: \|\n((?:        .*\n?)+)", text):
         assert "${{" not in run_block
+
+
+def test_action_pins_third_party_actions_to_commit_shas() -> None:
+    """action.yml runs in other people's workflows with their token, so every action it
+    uses must be pinned to an immutable commit, not a tag that can be moved."""
+    text = (ROOT / "action.yml").read_text(encoding="utf-8")
+    refs = re.findall(r"uses:\s*([^\s#]+)", text)
+    assert refs
+    for ref in refs:
+        assert re.fullmatch(r"[\w.-]+/[\w.-]+@[0-9a-f]{40}", ref), f"not pinned to a SHA: {ref}"
