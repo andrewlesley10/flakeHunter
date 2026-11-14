@@ -40,8 +40,11 @@ class LLMResult:
 class Classifier(Protocol):
     """Anything that can classify one failure. Tests pass fakes; providers are classes."""
 
-    model: str
-    provider: str
+    @property
+    def model(self) -> str: ...
+
+    @property
+    def provider(self) -> str: ...
 
     def classify(
         self,
