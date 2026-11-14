@@ -178,3 +178,20 @@ Key design decisions and their trade-offs. Each entry gives the context, the dec
 **Why:** A pure core is easy to test and reuse. A triage tool that breaks builds would be uninstalled the first time it did. The cap protects the free rate limit when one broken service fails 300 tests, which wouldn't add any insight anyway.
 
 **Trade-offs:** With a cap, some failures get no verdict at all; the report says how many. Exit code 0 means a misconfigured FlakeHunter is silent unless you read the warning, which is why the warning is also printed as a GitHub `::warning::` annotation in M7.
+
+## 011 · GitHub integration: sticky comment, fork skip, least privilege
+
+**Context:** The Action runs in other people's repositories, on every failing PR build, with a token we don't control.
+
+**Decision:**
+- **One sticky comment.** The report starts with a hidden `<!-- flakehunter -->` marker. Each run lists the PR's comments (all pages), edits the one with the marker, or creates it. No comment ID is stored, because the Action has no state between runs.
+- **Forks are skipped up front.** If `head.repo` differs from the base repo, the token is read-only, so FlakeHunter writes the job summary and an annotation instead of letting the API return 403. The model isn't called either.
+- **Least privilege.** The example workflow grants only `contents: read`, `pull-requests: write` and `models: read`. There are no secrets to configure.
+- **Injection-safe composite steps.** Inputs reach the shell only through `env:`, never `${{ }}` inside `run:`.
+- **Fail open twice.** Python turns every error into a `::warning::` and exit 0, and the shell step adds `|| echo ::warning::` in case installing FlakeHunter itself fails.
+- **Composite Action run with `uvx --from $GITHUB_ACTION_PATH`.** uv installs Python and the package in seconds, with no Docker image to build or pull.
+- **Rate limits.** The openai SDK already retries 429s, honouring `Retry-After` (2 retries); after that, the pipeline's circuit breaker stops model calls and the report says so.
+
+**Why:** Re-runs must not spam the PR, fork PRs are common on public repos, and a tool that needs secrets or can turn a build red won't be adopted.
+
+**Trade-offs:** Listing comments costs one API call per 100 comments on every run. Fork PRs get no comment at all; a `workflow_run`-based two-stage design could fix that, but it adds complexity and a privileged workflow that has to be secured carefully.
