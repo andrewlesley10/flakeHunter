@@ -18,3 +18,4 @@ data/raw/
 .DS_Store
 data/processed/
 evals/.cache/
+.playwright-mcp/
