@@ -93,7 +93,9 @@ def main() -> None:
 
 def _node_id(classname: str | None, name: str) -> str:
     module = (classname or "").replace(".", "/")
-    return f"{module}.py::{name}" if module else name
+    # A collection error has no classname; its "name" is the module itself. An invalid
+    # node id makes pytest reject the whole re-run, so this must always be a real path.
+    return f"{module}.py::{name}" if module else f"{name}.py"
 
 
 if __name__ == "__main__":

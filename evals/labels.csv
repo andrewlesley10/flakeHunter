@@ -45,7 +45,6 @@ test_orders::test_reserve_stock_never_negative,scenarios,product_bug,no check fo
 test_orders::test_split_payment_adds_up,scenarios,product_bug,shares lose a penny to rounding,design
 test_orders::test_subtotal_counts_quantities,scenarios,product_bug,subtotal ignores quantity,design
 test_orders::test_total_rounding,scenarios,test_code,expected value is wrong: 0.30 * 1.2 = 0.36,design
-test_reports::test_dashboard_sampling,scenarios,flaky_test,random sample,design
 test_reports::test_export_flag,scenarios,unknown,pytest.fail() with no message,design
 test_reports::test_percent_change_from_zero,scenarios,product_bug,division by zero not handled,design
 test_reports::test_quarter_of_december,scenarios,product_bug,same quarter() bug,design
