@@ -304,3 +304,46 @@ def test_long_lines_truncated_after_redaction() -> None:
 def test_prepare_for_llm_without_logs() -> None:
     ctx = prepare_for_llm(make_failure())
     assert "### log:" not in ctx.text
+
+
+# --- regressions from the security review --------------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("url", "expected"),
+    [
+        ("postgres://app:p@ssw0rd@db:5432/x", "postgres://app:[REDACTED]@db:5432/x"),
+        ("https://u:a@b@c@host/path?next=x@y", "https://u:[REDACTED]@host/path?next=x@y"),
+    ],
+)
+def test_url_password_containing_at_sign(url: str, expected: str) -> None:
+    assert redact(url) == expected
+
+
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [
+        ('password: "correct horse, battery"', 'password: "[REDACTED]"'),
+        ("secret='a b;c&d'", "secret='[REDACTED]'"),
+        ('{"apiKey": "has space", "user": "bob"}', '{"apiKey": "[REDACTED]", "user": "bob"}'),
+    ],
+)
+def test_quoted_value_masked_to_closing_quote(text: str, expected: str) -> None:
+    assert redact(text) == expected
+
+
+@pytest.mark.parametrize("before", [0, 1, 5, 15])
+def test_trim_window_starting_inside_private_key_does_not_leak(before: int) -> None:
+    body = [f"MIIEowIBAAKCAQEA{i:04d}abcdefabcdefabcdef" for i in range(30)]
+    log = ["-----BEGIN RSA PRIVATE KEY-----", *body, "-----END RSA PRIVATE KEY-----"]
+    log.append("FAILED test_login")
+    ctx = prepare_for_llm(make_failure(), {"ci.log": log}, before=before, after=1)
+    assert "MIIEowIBAAKCAQEA" not in ctx.text
+    assert ctx.secrets_masked["private_key"] == 1
+
+
+def test_head_tail_inside_private_key_does_not_leak() -> None:
+    body = [f"QUJDREVGR0hJSktMTU5PUFFSU1RVVldY{i:04d}" for i in range(100)]
+    details = "\n".join(["-----BEGIN PRIVATE KEY-----", *body, "-----END PRIVATE KEY-----"])
+    ctx = prepare_for_llm(make_failure(details=details))
+    assert "QUJDREVGR0hJSktMTU5PUFFSU1RVVldY" not in ctx.text

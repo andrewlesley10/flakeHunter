@@ -4,13 +4,16 @@ CI logs are both *sensitive* (they leak tokens, passwords in URLs, auth headers)
 *large* (tens of thousands of lines). Before anything is sent to a model, which may be
 a third-party service, ``prepare_for_llm`` does three things in a fixed order:
 
-1. **Trim**: keep only whole lines near the failure. Working on whole lines never cuts
-   a secret in half, so step 2 can still recognise it.
-2. **Redact**: replace likely secrets with typed placeholders such as
-   ``[REDACTED:github_token]``. The model and the reader still see that *something*
-   was there ("auth failed"), but not the value.
-3. **Truncate long lines**: done *after* redaction, because cutting a line first could
-   leave a partial token too short for its pattern to match.
+1. **Redact** each *whole* block (message, stack trace, stdout, each full log), replacing
+   likely secrets with typed placeholders such as ``[REDACTED:github_token]``. The model
+   and the reader still see that *something* was there ("auth failed"), but not the value.
+2. **Trim**: keep only lines near the failure.
+3. **Truncate long lines**.
+
+Redaction must come first. Any cut made before it (a trim window, a head/tail, a
+line-length limit) can split a secret so its pattern no longer matches: a window that
+starts inside a multi-line private key drops the ``-----BEGIN`` line and the key body
+leaks. Cutting text that has already been redacted can only cut placeholders.
 
 Regex redaction is best-effort: no pattern list catches every secret. It is one layer
 of several, alongside least-privilege tokens (M7) and sending as little text as
@@ -80,8 +83,9 @@ PATTERNS: tuple[tuple[str, re.Pattern[str], str], ...] = (
     ),
     (
         "url_credentials",
-        # user may be empty: redis://:password@host
-        re.compile(rf"(?i)(\b[a-z][a-z0-9+.-]*://[^\s:/@]*:){_NOT_PLACEHOLDER}[^\s@/]+@"),
+        # User may be empty (redis://:pw@host). The password is greedy up to the LAST "@"
+        # before the path, because unencoded "@" in passwords is common (p@ss@host).
+        re.compile(rf"(?i)(\b[a-z][a-z0-9+.-]*://[^\s:/@]*:){_NOT_PLACEHOLDER}[^\s/?#]*@"),
         r"\1[REDACTED]@",
     ),
     (
@@ -93,7 +97,16 @@ PATTERNS: tuple[tuple[str, re.Pattern[str], str], ...] = (
     ),
     (
         "key_value",
-        # password=..., "api_key": "...", DB_PASSWORD: ..., token='...'
+        # Quoted value: mask everything up to the matching closing quote, so spaces and
+        # commas inside the secret ("correct horse, battery") don't end the match early.
+        re.compile(
+            rf"(?i)((?:{_KV_KEYS})[A-Za-z0-9_-]*[\"']?\s*[:=]\s*)([\"']){_NOT_PLACEHOLDER}[^\n]*?\2"
+        ),
+        r"\1\2[REDACTED]\2",
+    ),
+    (
+        "key_value",
+        # Unquoted value: password=..., DB_PASSWORD: ..., --token abc
         re.compile(
             rf"(?i)((?:{_KV_KEYS})[A-Za-z0-9_-]*[\"']?\s*[:=]\s*[\"']?)"
             rf"{_NOT_PLACEHOLDER}[^\s\"',;&}}]{{4,}}"
@@ -213,21 +226,33 @@ def prepare_for_llm(
     after: int = 20,
     max_log_lines: int = 120,
 ) -> PreparedContext:
-    """Build the failure's evidence for the LLM: trim, then redact, then truncate lines.
+    """Build the failure's evidence for the LLM: redact, then trim, then truncate lines.
 
     This is the only function allowed to turn raw failure output into prompt text.
+    Every block is redacted *whole* before any cutting happens (see module docstring).
     """
-    needles = [failure.name, *failure.message.splitlines()[:1]]
+    counts: Counter[str] = Counter()
+
+    def clean(text: str) -> list[str]:
+        redacted, found = redact_with_stats(text)
+        counts.update(found)
+        return redacted.splitlines()
+
+    message = clean(failure.message)
+    needles = [failure.name, *message[:1]]
     sections: list[tuple[str, list[str]]] = [
-        ("message", failure.message.splitlines()),
-        ("stack trace", head_tail(failure.details.splitlines())),
+        ("message", message),
+        ("stack trace", head_tail(clean(failure.details))),
     ]
     if failure.stdout:
-        sections.append(("stdout", head_tail(failure.stdout.splitlines(), head=0, tail=40)))
+        sections.append(("stdout", head_tail(clean(failure.stdout), head=0, tail=40)))
     for name, lines in (logs or {}).items():
-        sections.append((f"log: {name}", trim_around(lines, needles, before, after, max_log_lines)))
+        trimmed = trim_around(clean("\n".join(lines)), needles, before, after, max_log_lines)
+        sections.append((f"log: {name}", trimmed))
 
-    raw = "\n".join(f"### {title}\n" + "\n".join(lines) for title, lines in sections if any(lines))
-    redacted, counts = redact_with_stats(raw)
-    text = "\n".join(_truncate_line(line) for line in redacted.splitlines())
+    text = "\n".join(
+        f"### {title}\n" + "\n".join(_truncate_line(line) for line in lines)
+        for title, lines in sections
+        if any(lines)
+    )
     return PreparedContext(text=text, secrets_masked=counts)
