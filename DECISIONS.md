@@ -57,3 +57,22 @@ Key design decisions and their trade-offs. Each entry gives the context, the dec
 - Some time goes on satisfying the checker rather than on features.
 
 **Would revisit if:** the checker's overhead clearly outweighed the bugs it caught. That's unlikely for a project that parses untrusted input.
+
+## 004 · Reject DTDs in JUnit reports to prevent XXE
+
+**Context:** JUnit reports come from CI runs that a pull request can influence, so they are untrusted input. XML allows a DTD to declare *entities*, which can read local files (XXE) or expand into gigabytes of text ("billion laughs"). FlakeHunter sends failure text to an LLM and posts it in a public PR comment, so a leaked file would be published. junitparser silently switches to lxml if it's installed, and lxml resolves entities by default.
+
+**Decision:** Before junitparser sees a file, parse it with the standard library's expat parser with handlers that raise `UnsafeXMLError` on any DOCTYPE, entity declaration or external entity reference. Real JUnit reports never contain a DTD, so legitimate files are unaffected.
+
+**Why:**
+- It works whichever XML backend junitparser picks.
+- Expat decodes the document's declared encoding before checking, and stops at the first DTD, before anything is expanded.
+- It needs no new dependency (`defusedxml` would also work, but expat is already in the standard library).
+
+**How I got here:** my first version searched the raw bytes for `<!DOCTYPE`. An automated security review pointed out that a UTF-16 file stores it as `<\0!\0D\0...`, which a byte search never matches. I reproduced the bypass, switched to expat, and now test every attack in both UTF-8 and UTF-16. Lesson: to make a security decision about a format, use a parser for that format rather than a text search.
+
+**Trade-offs:**
+- Each report is parsed twice (expat, then junitparser). Reports are small, so the cost is negligible.
+- A file with a harmless DTD is rejected outright rather than sanitised.
+
+**Would revisit if:** a widely used test runner started emitting DTDs in its reports.
