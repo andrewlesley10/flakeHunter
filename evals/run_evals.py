@@ -1,6 +1,6 @@
 """Score FlakeHunter on the labelled set. Runs locally on Ollama, so it's free.
 
-    uv run --group eval python evals/run_evals.py [--models llama3.2:3b llama3.1:8b] [--offline]
+    uv run python evals/run_evals.py [--models llama3.2:3b llama3.1:8b] [--offline]
 
 Three modes over the same items:
   rules     classify_with_rules only; no match means "unknown"
@@ -9,7 +9,8 @@ Three modes over the same items:
 
 Model replies are cached in evals/.cache (keyed by model + full prompt), so re-running
 is fast and changing the prompt invalidates exactly the affected entries. Writes
-evals/results.md, evals/predictions.csv and evals/confusion_matrix.png.
+evals/results.md and evals/predictions.csv, plus evals/confusion_matrix.png when
+matplotlib happens to be installed (it is optional and not a project dependency).
 """
 
 import argparse

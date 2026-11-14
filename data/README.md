@@ -17,7 +17,7 @@ git-ignored). Only our own labels and our own generated failures are in git.
 uv run python scripts/fetch_logchunks.py      # downloads 24 MB into data/raw/, writes data/processed/
 uv run python scripts/harvest_scenarios.py    # regenerates evals/dataset/scenarios.jsonl
 uv run python scripts/label.py                # review labels one by one in the terminal
-uv run --group eval python evals/run_evals.py --models llama3.2:3b llama3.1:8b
+uv run python evals/run_evals.py --models llama3.2:3b llama3.1:8b
 ```
 
 ## How LogChunks failures map onto the categories

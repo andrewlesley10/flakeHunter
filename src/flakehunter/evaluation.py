@@ -1,8 +1,8 @@
 """Pure helpers for the eval harness (``evals/run_evals.py``): labels, items, caching, metrics.
 
 Metrics are computed here in plain Python (about 40 lines) rather than with
-scikit-learn, so they are unit-tested and the eval adds only one dependency
-(matplotlib, for the confusion-matrix image). See DECISIONS 012.
+scikit-learn or pandas, so they are unit-tested and the eval needs no extra
+dependencies. See DECISIONS 014.
 """
 
 import csv

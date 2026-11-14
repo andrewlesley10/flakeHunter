@@ -222,3 +222,18 @@ Key design decisions and their trade-offs. Each entry gives the context, the dec
 **Why:** Failures I engineered have ground truth by construction, and every category is exercised through the real parsers, rules, model and GitHub path. Test names are neutral, so the model can't read the answer off the name.
 
 **Trade-offs:** Engineered failures are cleaner than real ones. The evals (014) therefore also use real build logs from LogChunks, and report the sources separately.
+
+## 014 · How FlakeHunter is evaluated
+
+**Context:** "Rules first, LLM second" is a claim until it's measured. No public dataset uses these five categories.
+
+**Decision:**
+- **Dataset (125 failures):** a scenario suite of small tests that fail *for real* for a known reason (91), the demo PR's failures (4), and a fixed random sample of real Travis build logs from LogChunks (30, labelled by Claude and marked for my review). See `data/README.md`.
+- **Three modes on the same items:** rules only, the model only (no hint, no retry information), and the real pipeline. Reported per source, so the clean scenarios can't hide the hard real logs.
+- **Metrics:** accuracy, macro F1 (the classes are imbalanced), per-class precision and recall, a confusion matrix, accuracy at confidence ≥ 0.8 *and the coverage it buys*, time and tokens per failure, and log-trimming recall on all 797 LogChunks logs.
+- **Caching:** replies are cached by SHA-256 of model + system prompt + user message. Re-running is instant, and a prompt change invalidates exactly the affected entries.
+- **No pandas or scikit-learn.** The metrics are about 40 lines of tested Python. The confusion-matrix PNG is drawn only if matplotlib happens to be installed; the table is in `results.md` either way.
+
+**What it changed:** the first run showed that every rule/model disagreement was won by the rule, and that the 3B model's "≥ 0.8" verdicts were right only 46% of the time. So the rule now wins disagreements, model-only confidence is capped at 0.7, and prompt v3 adds two short decision rules. Combined accuracy went from 48% to 56%, and "≥ 0.8" now means rule-backed. It also exposed a harvester bug that had dropped most retry results.
+
+**Trade-offs and honesty:** the improvement was tuned and measured on the same set, with no held-out split; `results.md` says so. Most labels are mine or by construction, so they're biased toward my own definitions. The scenarios are cleaner than real CI, which is why LogChunks is reported separately (and is much harder).
