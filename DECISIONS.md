@@ -76,3 +76,25 @@ Key design decisions and their trade-offs. Each entry gives the context, the dec
 - A file with a harmless DTD is rejected outright rather than sanitised.
 
 **Would revisit if:** a widely used test runner started emitting DTDs in its reports.
+
+## 005 · Rules as data, highest confidence wins, LLM below 0.8
+
+**Context:** Many CI failures are obvious (`Connection refused`, a test that passed on retry). Sending those to an LLM wastes time and rate limit, and makes the verdict harder to explain. Some patterns, like timeouts, are genuinely ambiguous.
+
+**Decision:**
+- Rules are a list of `Rule(name, category, confidence, check)` objects, not an if/else chain.
+- Every rule is checked; the **highest confidence wins**, and ties go to the rule listed first.
+- Hints at or above **0.8** are final. Below that, the failure goes to the LLM *with the hint attached* as context.
+- Rules search the failure output (message, stack trace, stdout), never the test name.
+
+**Why:**
+- Data-driven rules can be tested by parametrising over the list, and the evals can report per-rule hit rates.
+- Confidence routes work instead of being decoration: `timeout_generic` is 0.6 on purpose, because a timeout can be a slow environment *or* a flaky race.
+- "Passed on retry" is the strongest evidence there is (0.95), so it beats an environment match in the same output.
+- Searching the test name would misfire on names like `test_connection_refused_is_retried`.
+
+**Trade-offs:**
+- Confidence values are hand-picked until the evals (M9) calibrate them.
+- Conservative patterns miss some cases. That's deliberate: a wrong rule is worse than no rule, because it is confidently wrong *and* skips the LLM.
+
+**Would revisit if:** the M9 evals show a rule's precision below its confidence, or the LLM clearly beats a rule on its own category.
